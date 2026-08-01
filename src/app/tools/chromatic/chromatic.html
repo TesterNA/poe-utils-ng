@@ -1,0 +1,175 @@
+<poe-tool-page
+  [heading]="'Chromatic Calculator'"
+  [subtitle]="'Socket Coloring · Vorici Crafting Cost'"
+>
+  <poe-card [maxWidth]="'900px'">
+    <div class="chrom-form-grid">
+      <!-- Left column -->
+      <div>
+        <div class="section-label">Item</div>
+        <div class="poe-field">
+          <div class="poe-field-label">Total Sockets</div>
+          <input
+            type="number"
+            class="chrom-entry"
+            placeholder="#"
+            [ngModel]="sockets()"
+            (ngModelChange)="sockets.set($event)"
+          />
+        </div>
+
+        <div class="section-label" style="margin-top: 16px">Attribute Requirements</div>
+        <div class="chrom-reqs-row">
+          <div class="chrom-req-field">
+            <div class="chrom-req-label chrom-label-str">STR</div>
+            <input
+              type="number"
+              class="chrom-entry chrom-str"
+              placeholder="0"
+              [ngModel]="str()"
+              (ngModelChange)="str.set($event)"
+            />
+          </div>
+          <div class="chrom-req-field">
+            <div class="chrom-req-label chrom-label-dex">DEX</div>
+            <input
+              type="number"
+              class="chrom-entry chrom-dex"
+              placeholder="0"
+              [ngModel]="dex()"
+              (ngModelChange)="dex.set($event)"
+            />
+          </div>
+          <div class="chrom-req-field">
+            <div class="chrom-req-label chrom-label-int">INT</div>
+            <input
+              type="number"
+              class="chrom-entry chrom-int"
+              placeholder="0"
+              [ngModel]="int()"
+              (ngModelChange)="int.set($event)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <div class="section-label">Desired Socket Colors</div>
+        <div class="chrom-colors-row">
+          <div class="chrom-color-field">
+            <div class="chrom-color-dot chrom-dot-r">R</div>
+            <input
+              type="number"
+              class="chrom-entry chrom-r"
+              placeholder="0"
+              min="0"
+              [ngModel]="red()"
+              (ngModelChange)="red.set($event)"
+            />
+          </div>
+          <div class="chrom-color-field">
+            <div class="chrom-color-dot chrom-dot-g">G</div>
+            <input
+              type="number"
+              class="chrom-entry chrom-g"
+              placeholder="0"
+              min="0"
+              [ngModel]="green()"
+              (ngModelChange)="green.set($event)"
+            />
+          </div>
+          <div class="chrom-color-field">
+            <div class="chrom-color-dot chrom-dot-b">B</div>
+            <input
+              type="number"
+              class="chrom-entry chrom-b"
+              placeholder="0"
+              min="0"
+              [ngModel]="blue()"
+              (ngModelChange)="blue.set($event)"
+            />
+          </div>
+        </div>
+
+        <button
+          class="poe-btn poe-btn-primary"
+          style="margin-top: 20px"
+          [disabled]="!solverReady"
+          (click)="calculate()"
+        >
+          <img
+            src="assets/Chromatic_Orb.png"
+            alt=""
+            style="width: 18px; height: 18px; margin-right: 4px; vertical-align: middle"
+          />
+          Calculate
+        </button>
+      </div>
+    </div>
+
+    <div class="poe-divider">
+      <div class="poe-divider-line"></div>
+      <div class="poe-diamond"></div>
+      <div class="poe-divider-line"></div>
+    </div>
+
+    @if (!solverReady) {
+      <div class="chrom-notes" style="color: var(--red); margin-bottom: 16px">
+        <strong style="color: var(--text)">Solver unavailable:</strong> the crafting solver script
+        <code>vendor/PoEChromaticCalc.js</code> did not load, so calculations are disabled. Reload
+        the page or check whether a browser extension is blocking it.
+      </div>
+    }
+
+    <!-- Results -->
+    <div style="overflow-x: auto">
+      <table class="sortable chrom-result-table">
+        <thead>
+          <tr class="prob chrom-thead-row">
+            <th>Craft Type</th>
+            <th>Avg Cost <span class="tablesubtitle">(chromatics)</span></th>
+            <th>Success Chance</th>
+            <th>Avg Attempts <span class="tablesubtitle">(mean)</span></th>
+            <th>Cost / Try <span class="tablesubtitle">(chromatics)</span></th>
+            <th>Std Deviation <span class="tablesubtitle">(attempts)</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (result of rows(); track $index) {
+            <tr class="prob" [class.best]="$index === bestIndex()">
+              <td>{{ result.recipeName }}</td>
+              <td>
+                @if (calculated()) {
+                  <span class="highlighted">{{ result.avgCost }}</span>
+                } @else {
+                  {{ result.avgCost }}
+                }
+              </td>
+              <td>{{ result.chance }}</td>
+              <td>{{ result.avgTries }}</td>
+              <td>{{ result.recipeCost }}</td>
+              <td>{{ result.stdDev }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="poe-divider">
+      <div class="poe-divider-line"></div>
+      <div class="poe-diamond"></div>
+      <div class="poe-divider-line"></div>
+    </div>
+
+    <div class="chrom-notes">
+      <strong style="color: var(--text)">Note:</strong> Chromatic orbs cannot reroll the same color
+      permutation twice, so the chromatic success chance is always higher than the drop rate.<br />
+      For mono-requirement items — on-color: <code>0.9 × (R+10) / (R+20)</code> · off-color:
+      <code>0.05 + 4.5 / (R+20)</code><br />
+      For dual-requirement items — on-color: <code>0.9 × R1 / (R1+R2)</code> · off-color:
+      <code>10%</code> flat<br />
+      <span style="color: var(--text-muted)">Original calculator by Siveran · CC0 2017</span>
+    </div>
+  </poe-card>
+</poe-tool-page>

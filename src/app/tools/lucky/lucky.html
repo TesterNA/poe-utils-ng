@@ -1,0 +1,80 @@
+<poe-tool-page [pips]="[true, false, true]" [heading]="'Lucky Percentage Calculator'" [subtitle]="'Two-Roll Probability'">
+  <poe-card [maxWidth]="'460px'">
+    <div class="mode-toggle">
+      <label class="mode-label">
+        <input
+          type="radio"
+          name="lucky-mode"
+          value="normal"
+          [checked]="tab() === 'normal'"
+          (change)="switchTab('normal')"
+        />
+        <span class="mode-tab">Initial → Lucky</span>
+      </label>
+      <label class="mode-label">
+        <input
+          type="radio"
+          name="lucky-mode"
+          value="reverse"
+          [checked]="tab() === 'reverse'"
+          (change)="switchTab('reverse')"
+        />
+        <span class="mode-tab">Lucky → Required</span>
+      </label>
+    </div>
+
+    @if (tab() === 'normal') {
+      <div>
+        <div class="poe-field">
+          <div class="poe-field-label">Initial percentage chance (%)</div>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            placeholder="0.00"
+            (input)="onInitialInput($event)"
+            (keydown.enter)="calcLucky()"
+          />
+        </div>
+        <button class="poe-btn poe-btn-primary" (click)="calcLucky()">Calculate Lucky %</button>
+        <div
+          class="lucky-result"
+          [class.show]="result1().show"
+          [class.error]="result1().error"
+        >{{ result1().label }}@if (result1().value) {<strong>{{ result1().value }}</strong>}</div>
+        <div class="info-text">
+          Calculate the lucky percentage when you have two attempts at the given initial chance.
+        </div>
+      </div>
+    }
+
+    @if (tab() === 'reverse') {
+      <div>
+        <div class="poe-field">
+          <div class="poe-field-label">Desired lucky percentage (%)</div>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            placeholder="0.00"
+            (input)="onLuckyInput($event)"
+            (keydown.enter)="calcRequired()"
+          />
+        </div>
+        <button class="poe-btn poe-btn-primary" (click)="calcRequired()">
+          Calculate Required %
+        </button>
+        <div
+          class="lucky-result"
+          [class.show]="result2().show"
+          [class.error]="result2().error"
+        >{{ result2().label }}@if (result2().value) {<strong>{{ result2().value }}</strong>}</div>
+        <div class="info-text">
+          Calculate what initial percentage you need to achieve the desired lucky percentage.
+        </div>
+      </div>
+    }
+  </poe-card>
+</poe-tool-page>

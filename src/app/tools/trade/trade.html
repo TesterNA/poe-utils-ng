@@ -1,0 +1,281 @@
+<poe-tool-page
+  heading="Bulk Trade Calculator"
+  subtitle="Quantities · Prices · Presets · Request Generator"
+>
+  <div class="tool-intro">
+    <strong>Bulk-selling helper.</strong> Track everything you're selling in one place —
+    add a card per product (name · quantity · price · Divine/Chaos), mark amounts as
+    <em>sold</em>, and get live totals in Divine and Chaos. Save reusable presets
+    (e.g. beasts, currency), share them via export/import, and hit
+    <strong>Generate Request</strong> to produce a ready-to-paste WTS message for trade chat.
+  </div>
+
+  <div class="trade-header-row">
+    <div class="trade-controls-row">
+      <div class="exchange-rate-wrap">
+        1 <img [src]="divImg" class="currency-img-sm" alt="div" /> =
+        <input
+          type="text"
+          inputmode="decimal"
+          title="Divine to Chaos rate"
+          [ngModel]="exchangeRateText()"
+          (ngModelChange)="exchangeRateText.set($event)"
+        />
+        <img [src]="chaosImg" class="currency-img-sm" alt="chaos" />
+      </div>
+      <button class="poe-btn poe-btn-yellow" (click)="resetAllTotals()">↺ Reset Totals</button>
+      <div class="preset-row">
+        <select [ngModel]="loadedName()" (ngModelChange)="loadPreset($event)">
+          @for (preset of presets(); track preset.name) {
+            <option [value]="preset.name">{{ preset.name }}</option>
+          }
+        </select>
+        <button
+          class="poe-btn poe-btn-dim poe-btn-icon"
+          title="Manage presets"
+          (click)="togglePresetPanel()"
+        >
+          ⚙
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="preset-panel" [class.open]="showPresetPanel()">
+    <div class="preset-panel-inner">
+      <div class="preset-row-inner">
+        <input
+          type="text"
+          placeholder="New preset name…"
+          [ngModel]="newPresetName()"
+          (ngModelChange)="newPresetName.set($event)"
+        />
+        <button
+          class="poe-btn poe-btn-green poe-btn-icon"
+          title="Save as new preset"
+          (click)="savePreset(newPresetName().trim())"
+        >
+          💾
+        </button>
+        <button
+          class="poe-btn poe-btn-blue poe-btn-icon"
+          title="Overwrite current preset"
+          (click)="overwriteCurrentPreset()"
+        >
+          ↻
+        </button>
+        <button
+          class="poe-btn poe-btn-red poe-btn-icon"
+          title="Delete current preset"
+          [disabled]="loadedName() === 'Main'"
+          (click)="deletePreset(loadedName())"
+        >
+          🗑
+        </button>
+      </div>
+      <div class="preset-row-inner">
+        <input
+          type="text"
+          placeholder="Base64 string to import…"
+          [ngModel]="importText()"
+          (ngModelChange)="importText.set($event)"
+        />
+        <button
+          class="poe-btn poe-btn-yellow poe-btn-icon"
+          title="Export current preset"
+          (click)="exportPreset()"
+        >
+          📤
+        </button>
+        <button
+          class="poe-btn poe-btn-blue poe-btn-icon"
+          title="Import preset"
+          (click)="importPreset(importText())"
+        >
+          📥
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="trade-actions-row">
+    <button class="poe-btn poe-btn-green" [disabled]="!canAddCalculator()" (click)="addCalculator()">
+      + Add Calculator
+    </button>
+    <button class="poe-btn poe-btn-blue" (click)="openRequestModal()">📝 Generate Request</button>
+  </div>
+
+  <div class="calculators-grid">
+    @for (row of rows(); track row.id) {
+      <div class="calc-card fade-up" [attr.data-id]="row.id">
+        <div class="calc-card-head">
+          <input
+            type="text"
+            class="calc-label-input"
+            [placeholder]="'Calculator_' + row.id"
+            [ngModel]="row.label"
+            (ngModelChange)="setLabel(row.id, $event)"
+          />
+          <button
+            class="calc-remove-btn"
+            title="Remove"
+            [disabled]="soloCalculator()"
+            (click)="removeCalculator(row.id)"
+          >
+            ×
+          </button>
+        </div>
+        <div class="calc-field">
+          <label>Total Quantity</label>
+          <input
+            type="text"
+            inputmode="decimal"
+            placeholder="0"
+            [ngModel]="row.totalText"
+            (ngModelChange)="setTotalText(row.id, $event)"
+          />
+        </div>
+        <div class="calc-field">
+          <label>Price / ea</label>
+          <input
+            type="text"
+            inputmode="decimal"
+            placeholder="0"
+            [ngModel]="row.priceText"
+            (ngModelChange)="setPriceText(row.id, $event)"
+          />
+        </div>
+        <div class="calc-field">
+          <label>Currency</label>
+          <div class="currency-selector">
+            <div
+              class="currency-option"
+              [class.selected]="row.currencyType === 'д'"
+              (click)="setCurrency(row.id, 'д')"
+            >
+              <img [src]="divImg" class="currency-img-sm" alt="div" /> Divine
+            </div>
+            <div
+              class="currency-option"
+              [class.selected]="row.currencyType === 'с'"
+              (click)="setCurrency(row.id, 'с')"
+            >
+              <img [src]="chaosImg" class="currency-img-sm" alt="chaos" /> Chaos
+            </div>
+          </div>
+        </div>
+        <div class="sold-row">
+          <input
+            type="text"
+            inputmode="decimal"
+            placeholder="Qty sold"
+            [ngModel]="row.soldText"
+            (ngModelChange)="setSoldText(row.id, $event)"
+          />
+          <button
+            class="poe-btn poe-btn-yellow sold-btn"
+            [disabled]="row.sold <= 0"
+            (click)="markAsSold(row.id)"
+          >
+            Sold
+          </button>
+        </div>
+        <div class="calc-result-line">
+          <span>{{ row.sold }}</span>
+          <span style="color: var(--text-dim)">×</span>
+          <span>{{ row.price }}</span>
+          <span style="color: var(--text-dim)">=</span>
+          <span class="result-num">{{ row.resultText }}</span>
+          <img [src]="imgSrc(row.currencyType)" class="currency-img" [alt]="imgAlt(row.currencyType)" />
+        </div>
+      </div>
+    }
+  </div>
+
+  <div>
+    <div class="summary-section">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="summary-head">
+        <h3>Summary</h3>
+        <button class="poe-btn poe-btn-yellow" (click)="soldAll()">Sold All</button>
+      </div>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-item-label">
+            Divine total <img [src]="divImg" class="currency-img-sm" alt="div" />
+          </div>
+          <div class="summary-item-value">
+            {{ summary().totalDText }} <img [src]="divImg" class="currency-img" alt="div" />
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">
+            Chaos total <img [src]="chaosImg" class="currency-img-sm" alt="chaos" />
+          </div>
+          <div class="summary-item-value">
+            {{ summary().totalCText }} <img [src]="chaosImg" class="currency-img" alt="chaos" />
+          </div>
+        </div>
+        <div class="summary-item total-item">
+          <div class="summary-item-label">
+            All in Chaos <img [src]="chaosImg" class="currency-img-sm" alt="chaos" />
+          </div>
+          <div class="summary-item-value">
+            {{ summary().totalInCText }} <img [src]="chaosImg" class="currency-img" alt="chaos" />
+          </div>
+        </div>
+        <div class="summary-item total-item">
+          <div class="summary-item-label">All in Divine + rest</div>
+          <div class="summary-item-value">
+            {{ summary().wholeDPart }} <img [src]="divImg" class="currency-img" alt="div" />
+            {{ summary().remainderCText }} <img [src]="chaosImg" class="currency-img" alt="chaos" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</poe-tool-page>
+
+@if (modalOpen()) {
+  <div class="modal-backdrop" (click)="closeRequestModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <span class="modal-title">Generated Request</span>
+        <button class="modal-close" (click)="closeRequestModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="poe-field">
+          <div class="poe-field-label">Header (optional)</div>
+          <input
+            type="text"
+            class="modal-text-input"
+            placeholder="Enter header text..."
+            [ngModel]="requestHeader()"
+            (ngModelChange)="requestHeader.set($event)"
+          />
+        </div>
+        <div class="poe-field">
+          <div class="poe-field-label">Generated Request</div>
+          <textarea readonly rows="10" class="modal-textarea" [value]="modalBody()"></textarea>
+        </div>
+        <div class="poe-field">
+          <div class="poe-field-label">Footer (optional)</div>
+          <input
+            type="text"
+            class="modal-text-input"
+            placeholder="Enter footer text..."
+            [ngModel]="requestFooter()"
+            (ngModelChange)="requestFooter.set($event)"
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="poe-btn poe-btn-green" (click)="copyFullRequest()">Copy All</button>
+          <button class="poe-btn poe-btn-dim" (click)="closeRequestModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

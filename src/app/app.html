@@ -1,0 +1,54 @@
+<aside class="sidebar" [class.open]="sidebarOpen()">
+  <div class="sidebar-logo">
+    <div class="sidebar-pip"></div>
+    <span class="sidebar-title">POE TOOLS</span>
+    <div class="sidebar-pip"></div>
+  </div>
+  <div class="sidebar-divider">
+    <div class="sidebar-divider-line"></div>
+    <div class="sidebar-diamond"></div>
+    <div class="sidebar-divider-line"></div>
+  </div>
+  <nav class="sidebar-nav">
+    @for (tool of tools; track tool.id) {
+      <a
+        class="nav-btn"
+        [routerLink]="['/', tool.id]"
+        routerLinkActive="active"
+        (click)="closeSidebar()"
+      >
+        <svg
+          class="nav-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          [innerHTML]="icon(tool)"
+        ></svg>
+        <span>{{ tool.label }}</span>
+      </a>
+    }
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-gems">
+      <div class="footer-gem gem-red"></div>
+      <div class="footer-gem gem-green"></div>
+      <div class="footer-gem gem-blue"></div>
+    </div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" [class.visible]="sidebarOpen()" (click)="closeSidebar()"></div>
+
+<div class="app-content">
+  <header class="mobile-header">
+    <button class="menu-toggle" (click)="openSidebar()" aria-label="Open menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18" />
+      </svg>
+    </button>
+    <span class="mobile-title">POE TOOLS</span>
+  </header>
+
+  <router-outlet />
+</div>

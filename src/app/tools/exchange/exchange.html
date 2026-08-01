@@ -1,0 +1,78 @@
+<poe-tool-page [heading]="'Currency Exchange'" [subtitle]="'Exchange Ratio · Optimal Amounts'">
+  <poe-card [maxWidth]="'520px'">
+    <div class="section-label">Exchange Ratio</div>
+    <div class="ratio-row">
+      <div class="poe-field" style="flex: 1">
+        <div class="poe-field-label">Currency A</div>
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          [value]="ratioA()"
+          (input)="onRatioAInput($event)"
+        />
+      </div>
+      <div class="ratio-sep">:</div>
+      <div class="poe-field" style="flex: 1">
+        <div class="poe-field-label">Currency B</div>
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          [value]="ratioB()"
+          (input)="onRatioBInput($event)"
+        />
+      </div>
+    </div>
+
+    <div class="poe-divider">
+      <div class="poe-divider-line"></div>
+      <div class="poe-diamond"></div>
+      <div class="poe-divider-line"></div>
+    </div>
+
+    <div class="poe-field">
+      <div class="poe-field-label">Amount of Currency A</div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Enter amount"
+        [value]="amountA()"
+        (input)="onAmountAInput($event)"
+      />
+    </div>
+    <div class="exchange-arrow">⇅</div>
+    <div class="poe-field">
+      <div class="poe-field-label">Amount of Currency B</div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Enter amount"
+        [value]="amountB()"
+        (input)="onAmountBInput($event)"
+      />
+    </div>
+
+    <div class="poe-divider">
+      <div class="poe-divider-line"></div>
+      <div class="poe-diamond"></div>
+      <div class="poe-divider-line"></div>
+    </div>
+
+    <div class="section-label">Optimal Whole Number Exchange</div>
+    <div class="info-text">
+      Based on your input, to receive a whole number amount (rounded down):
+    </div>
+    <div class="poe-field">
+      <div class="poe-field-label">{{ optimalInputLabel() }}</div>
+      <input type="number" class="result-input" readonly [value]="optimalInput()" />
+    </div>
+    <div class="exchange-arrow">↓</div>
+    <div class="poe-field">
+      <div class="poe-field-label">{{ optimalResultLabel() }}</div>
+      <input type="number" class="result-input" readonly [value]="optimalResult()" />
+    </div>
+  </poe-card>
+</poe-tool-page>

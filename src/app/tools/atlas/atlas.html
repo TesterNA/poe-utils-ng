@@ -1,0 +1,120 @@
+<div class="atlas-shell">
+  <canvas
+    #canvas
+    class="atlas-canvas"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointercancel)="onPointerUp($event)"
+    (pointerleave)="onPointerLeave()"
+    (contextmenu)="$event.preventDefault()"
+  ></canvas>
+
+  @if (tooltip(); as tip) {
+    <div class="atlas-tooltip" [style.left.px]="tip.x" [style.top.px]="tip.y">
+      <div class="atlas-tip-name" [class]="'kind-' + tip.kind">{{ tip.name }}</div>
+      @for (stat of tip.stats; track $index) {
+        <div class="atlas-tip-stat">{{ stat }}</div>
+      }
+      @for (line of tip.reminder; track $index) {
+        <div class="atlas-tip-reminder">{{ line }}</div>
+      }
+      @if (tip.hint) {
+        <div class="atlas-tip-hint">{{ tip.hint }}</div>
+      }
+    </div>
+  }
+
+  <aside class="atlas-panel">
+    <div class="atlas-panel-head">
+      <div class="section-label">Atlas Selector</div>
+      <div class="atlas-points">
+        <span [class.over]="allocatedCount() > totalPoints()">{{ allocatedCount() }}</span
+        ><span class="atlas-points-sep">&nbsp;/&nbsp;</span>{{ totalPoints() }}
+      </div>
+    </div>
+
+    <div class="mode-toggle atlas-modes">
+      <label class="mode-label">
+        <input type="radio" name="atlas-mode" value="path" [checked]="mode() === 'path'" (change)="setMode('path')" />
+        <span class="mode-tab">1 · Path</span>
+      </label>
+      <label class="mode-label">
+        <input type="radio" name="atlas-mode" value="targets" [checked]="mode() === 'targets'" (change)="setMode('targets')" />
+        <span class="mode-tab">2 · Targets</span>
+      </label>
+    </div>
+
+    @if (mode() === 'path') {
+      <p class="atlas-hint">
+        Click a node to allocate the shortest path from the Atlas centre. Click an allocated node
+        to drop it along with everything hanging off it. Drag to pan, scroll to zoom.
+      </p>
+    } @else {
+      <p class="atlas-hint">
+        Click every node you actually <b>want</b>. The tool works out the smallest tree that takes
+        all of them. Click a target again to remove it.
+      </p>
+
+      <div class="atlas-status">{{ status() }}</div>
+
+      <div class="atlas-btn-row">
+        <button class="poe-btn poe-btn-green" [disabled]="routeCount() === 0" (click)="applyRoute()">
+          Apply route
+        </button>
+        <button class="poe-btn poe-btn-dim" [disabled]="targets().length === 0" (click)="clearTargets()">
+          Clear
+        </button>
+      </div>
+      <button class="poe-btn poe-btn-blue atlas-btn-wide" (click)="seedFromAllocated()">
+        Target current notables
+      </button>
+
+      @if (targets().length) {
+        <ul class="atlas-target-list">
+          @for (t of targets(); track t.idx) {
+            <li class="atlas-target" [class]="'kind-' + t.kind" (mouseenter)="highlight(t.idx)">
+              <span>{{ t.name }}</span>
+              <button type="button" title="Remove target" (click)="removeTarget(t.idx)">&times;</button>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    <div class="poe-field atlas-search-field">
+      <input
+        type="search"
+        class="atlas-search"
+        placeholder="Search node or stat..."
+        autocomplete="off"
+        [value]="query()"
+        (input)="onSearch($event)"
+      />
+    </div>
+    @if (searchHits().length) {
+      <ul class="atlas-hits">
+        @for (hit of searchHits(); track hit.idx) {
+          <li class="atlas-hit" [class]="'kind-' + hit.kind" (mouseenter)="highlight(hit.idx)" (click)="pickSearchHit(hit.idx)">
+            <b>{{ hit.name }}</b>
+            <small>{{ hit.stat }}</small>
+          </li>
+        }
+      </ul>
+    }
+
+    <div class="atlas-panel-foot">
+      @if (notice()) {
+        <div class="atlas-notice">{{ notice() }}</div>
+      }
+      <div class="atlas-btn-row">
+        <button class="poe-btn poe-btn-red" (click)="resetAll()">Reset all</button>
+        <button class="poe-btn poe-btn-dim" (click)="fitToScreen()">Fit</button>
+      </div>
+    </div>
+  </aside>
+
+  @if (loading()) {
+    <div class="atlas-loading">{{ loading() }}</div>
+  }
+</div>
