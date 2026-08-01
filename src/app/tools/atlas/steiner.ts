@@ -98,7 +98,7 @@ export function solveSteiner(
 
   // --- construction + local search -----------------------------------------
   progress('searching', 0.05);
-  const rng = makeRng(opts.seed ?? 12345);
+  let rng = makeRng(opts.seed ?? 12345);
   let best = shortestPathHeuristic(g, live, dists, parents, 0, rng);
   best = minimiseSet(g, best, live);
 
@@ -164,8 +164,20 @@ export function solveSteiner(
       note = 'heuristic (exact search ran out of time)';
     }
   } else if (exactMs > 0) {
-    // No exact pass for this instance — spend that time searching harder instead.
-    improve(Math.min(exactMs, heuristicMs * 4), 0.95);
+    // No exact pass for this instance, so spend that time searching harder.
+    // Measured (scripts/heuristic-quality.mjs): piling more time onto one search
+    // stream keeps re-exploring the same basin, while a different random start
+    // occasionally finds a smaller tree. So slice the budget into independent
+    // restarts — new rng, cleared guides — instead of one long run. `best` is
+    // global, so a restart can only ever help.
+    const budget = Math.min(exactMs, heuristicMs * 4);
+    const slices = 4;
+    const baseSeed = opts.seed ?? 12345;
+    for (let slice = 0; slice < slices; slice++) {
+      rng = makeRng(baseSeed + (slice + 1) * 7919);
+      guides = [];
+      improve(budget / slices, 0.5 + ((slice + 1) / slices) * 0.45);
+    }
     note = 'heuristic (too many targets for an exact search)';
   }
 
