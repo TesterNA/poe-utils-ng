@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { PoeCard } from '../../shared/poe-card';
 import { ToolPage } from '../../shared/tool-page';
+import { loadChromaticSolver } from './chromatic-solver';
 import type { ColoredLike, HaxeProbability, PoEChromaticCalcMain } from './poe-chromatic-calc';
 
 /**
@@ -60,10 +61,23 @@ const PLACEHOLDER_ROWS: readonly HaxeProbability[] = [1, 2, 3, 4].map(() =>
   templateUrl: './chromatic.html',
 })
 export class Chromatic {
-  /** `window.Main` from the vendored Haxe build, or null if it never loaded. */
-  private readonly solver: PoEChromaticCalcMain | null = Chromatic.resolveSolver();
+  /** `window.Main` from the vendored Haxe build, once it has been fetched. */
+  private solver: PoEChromaticCalcMain | null = null;
 
-  readonly solverReady = this.solver !== null;
+  readonly solverReady = signal(false);
+  /** Separates "still fetching" from "failed", so the error never flashes up. */
+  readonly solverLoaded = signal(false);
+
+  readonly sortKey = signal<SortKey | null>(null);
+  readonly sortAscending = signal(true);
+
+  constructor() {
+    void loadChromaticSolver().then((main) => {
+      this.solver = main;
+      this.solverReady.set(main !== null);
+      this.solverLoaded.set(true);
+    });
+  }
 
   readonly sockets = signal<number | null>(null);
   readonly str = signal<number | null>(null);
@@ -82,19 +96,45 @@ export class Chromatic {
    * the lowest positive average cost, falling back to the first row (which is
    * how an error row ends up highlighted).
    */
-  readonly bestIndex = computed(() => {
-    if (!this.calculated()) {
-      return -1;
+  readonly bestRow = computed<HaxeProbability | null>(() => {
+    const rows = this.rows();
+    if (!this.calculated() || rows.length === 0) {
+      return null;
     }
-    let best = 0;
+    let best = rows[0];
     let min = 0;
-    this.rows().forEach((probability, index) => {
+    for (const probability of rows) {
       if (probability.favg > 0 && (min === 0 || min > probability.favg)) {
-        best = index;
+        best = probability;
         min = probability.favg;
       }
-    });
+    }
     return best;
+  });
+
+  /**
+   * Rows in display order. Sorting is by identity-preserving copy so the
+   * highlighted best row keeps its highlight wherever it lands.
+   */
+  readonly displayRows = computed<readonly HaxeProbability[]>(() => {
+    const rows = this.rows();
+    const key = this.sortKey();
+    if (key === null || !this.calculated()) {
+      return rows;
+    }
+    const direction = this.sortAscending() ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const left = sortValue(a, key);
+      const right = sortValue(b, key);
+      // Cells without a value stay at the bottom whichever way we sort.
+      if (left === null || right === null) {
+        return left === right ? 0 : left === null ? 1 : -1;
+      }
+      if (typeof left === 'string' || typeof right === 'string') {
+        return String(left).localeCompare(String(right)) * direction;
+      }
+      return (left - right) * direction;
+    });
   });
 
   calculate(): void {
@@ -155,27 +195,54 @@ export class Chromatic {
     this.calculated.set(true);
   }
 
-  private static resolveSolver(): PoEChromaticCalcMain | null {
-    if (typeof window === 'undefined') {
-      return null;
+  // ------------------------------------------------------------- sorting ---
+
+  /** Clicking a header sorts by it; clicking the same one again reverses. */
+  toggleSort(key: SortKey): void {
+    if (this.sortKey() === key) {
+      this.sortAscending.update((asc) => !asc);
+    } else {
+      this.sortKey.set(key);
+      this.sortAscending.set(true);
     }
-    const main = window.Main;
-    if (!main || typeof main.getProbabilities !== 'function') {
-      return null;
-    }
-    if (!main.recipes || main.recipes.length === 0) {
-      // `main()` fills the recipe list before it reaches the old site's DOM,
-      // so a retry is safe: it either finishes the setup we need or throws on
-      // elements this app does not have.
-      try {
-        main.main();
-      } catch {
-        // Expected: the old #resultbody / #calcButton elements are gone.
-      }
-      if (!main.recipes || main.recipes.length === 0) {
-        return null;
-      }
-    }
-    return main;
   }
+
+  /** Reuses the arrow indicators the original SortTable stylesheet provided. */
+  sortClass(key: SortKey): string {
+    if (this.sortKey() !== key) {
+      return '';
+    }
+    return this.sortAscending() ? 'SortTable_sorted' : 'SortTable_sorted_reverse';
+  }
+}
+
+type SortKey = 'recipeName' | 'avgCost' | 'chance' | 'avgTries' | 'recipeCost' | 'stdDev';
+
+/**
+ * Sortable value of a cell. The solver hands back pre-formatted strings, so the
+ * numbers have to be recovered: thousands separators, a trailing `%`, and the
+ * `<` / `>-` prefixes it uses for values rounded away to zero. `null` means the
+ * cell has no value ("-"), which always sorts last in either direction.
+ */
+function sortValue(probability: HaxeProbability, key: SortKey): string | number | null {
+  switch (key) {
+    case 'recipeName':
+      return probability.recipeName;
+    case 'avgCost':
+      // favg is the same figure unrounded; "-" rows have no cost to compare.
+      return probability.avgCost === '-' ? null : probability.favg;
+    case 'chance':
+      return parseFormatted(probability.chance);
+    case 'avgTries':
+      return parseFormatted(probability.avgTries);
+    case 'recipeCost':
+      return parseFormatted(probability.recipeCost);
+    case 'stdDev':
+      return parseFormatted(probability.stdDev);
+  }
+}
+
+function parseFormatted(text: string): number | null {
+  const parsed = Number.parseFloat(text.replace(/[,%<>]/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
 }

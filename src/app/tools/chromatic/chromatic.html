@@ -95,7 +95,7 @@
         <button
           class="poe-btn poe-btn-primary"
           style="margin-top: 20px"
-          [disabled]="!solverReady"
+          [disabled]="!solverReady()"
           (click)="calculate()"
         >
           <img
@@ -114,7 +114,7 @@
       <div class="poe-divider-line"></div>
     </div>
 
-    @if (!solverReady) {
+    @if (solverLoaded() && !solverReady()) {
       <div class="chrom-notes" style="color: var(--red); margin-bottom: 16px">
         <strong style="color: var(--text)">Solver unavailable:</strong> the crafting solver script
         <code>vendor/PoEChromaticCalc.js</code> did not load, so calculations are disabled. Reload
@@ -127,17 +127,25 @@
       <table class="sortable chrom-result-table">
         <thead>
           <tr class="prob chrom-thead-row">
-            <th>Craft Type</th>
-            <th>Avg Cost <span class="tablesubtitle">(chromatics)</span></th>
-            <th>Success Chance</th>
-            <th>Avg Attempts <span class="tablesubtitle">(mean)</span></th>
-            <th>Cost / Try <span class="tablesubtitle">(chromatics)</span></th>
-            <th>Std Deviation <span class="tablesubtitle">(attempts)</span></th>
+            <th [class]="sortClass('recipeName')" (click)="toggleSort('recipeName')">Craft Type</th>
+            <th [class]="sortClass('avgCost')" (click)="toggleSort('avgCost')">
+              Avg Cost <span class="tablesubtitle">(chromatics)</span>
+            </th>
+            <th [class]="sortClass('chance')" (click)="toggleSort('chance')">Success Chance</th>
+            <th [class]="sortClass('avgTries')" (click)="toggleSort('avgTries')">
+              Avg Attempts <span class="tablesubtitle">(mean)</span>
+            </th>
+            <th [class]="sortClass('recipeCost')" (click)="toggleSort('recipeCost')">
+              Cost / Try <span class="tablesubtitle">(chromatics)</span>
+            </th>
+            <th [class]="sortClass('stdDev')" (click)="toggleSort('stdDev')">
+              Std Deviation <span class="tablesubtitle">(attempts)</span>
+            </th>
           </tr>
         </thead>
         <tbody>
-          @for (result of rows(); track $index) {
-            <tr class="prob" [class.best]="$index === bestIndex()">
+          @for (result of displayRows(); track $index) {
+            <tr class="prob" [class.best]="result === bestRow()">
               <td>{{ result.recipeName }}</td>
               <td>
                 @if (calculated()) {

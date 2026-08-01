@@ -30,8 +30,10 @@ npm run build
 - `src/app/shared/` — `poe-tool-page` (header with pips/title/subtitle) and `poe-card` (the bordered
   panel with ornamental corners) used by every tool.
 - `src/app/tools/<id>/` — one standalone component per tool, state held in signals.
-- `public/vendor/PoEChromaticCalc.js` — the vendored Haxe-compiled Vorici solver, loaded from
-  `index.html` and typed where it is used.
+- `public/vendor/PoEChromaticCalc.js` — the vendored Haxe-compiled Vorici solver. It is fetched on
+  demand by `chromatic-solver.ts` rather than from `index.html`, because it self-invokes a `main()`
+  that walks the original page's DOM. The loader hands it a throwaway hidden host with the two ids
+  it dereferences, so it finishes silently instead of throwing on every page load.
 
 ## Atlas Selector
 
