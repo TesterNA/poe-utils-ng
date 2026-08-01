@@ -7,7 +7,7 @@
     (pointerup)="onPointerUp($event)"
     (pointercancel)="onPointerUp($event)"
     (pointerleave)="onPointerLeave()"
-    (contextmenu)="$event.preventDefault()"
+    (contextmenu)="onContextMenu($event)"
   ></canvas>
 
   @if (tooltip(); as tip) {
@@ -48,12 +48,14 @@
     @if (mode() === 'path') {
       <p class="atlas-hint">
         Click a node to allocate the shortest path from the Atlas centre. Click an allocated node
-        to drop it along with everything hanging off it. Drag to pan, scroll to zoom.
+        to drop it along with everything hanging off it. <b>Right-click</b> blocks a node, so no
+        route may pass through it. Drag to pan, scroll to zoom.
       </p>
     } @else {
       <p class="atlas-hint">
         Click every node you actually <b>want</b>. The tool works out the smallest tree that takes
-        all of them. Click a target again to remove it.
+        all of them. Click a target again to remove it. <b>Right-click</b> blocks a node, so the
+        route is forced to go around it.
       </p>
 
       <div class="atlas-status">{{ status() }}</div>
@@ -80,6 +82,21 @@
           }
         </ul>
       }
+    }
+
+    @if (excluded().length) {
+      <div class="atlas-block-head">
+        <div class="section-label">Blocked ({{ excluded().length }})</div>
+        <button type="button" class="atlas-link-btn" (click)="clearExcluded()">clear</button>
+      </div>
+      <ul class="atlas-target-list">
+        @for (node of excluded(); track node.idx) {
+          <li class="atlas-target atlas-blocked" (mouseenter)="highlight(node.idx)">
+            <span>{{ node.name }}</span>
+            <button type="button" title="Unblock" (click)="removeExclusion(node.idx)">&times;</button>
+          </li>
+        }
+      </ul>
     }
 
     <div class="poe-field atlas-search-field">

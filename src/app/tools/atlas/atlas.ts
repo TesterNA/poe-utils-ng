@@ -21,7 +21,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { bfs, connectedWithin, walkBack, type Graph } from './graph';
+import { bfs, connectedWithin, walkBack, withoutBlocked, type Graph } from './graph';
 import { Renderer, type RenderState } from './renderer';
 import { SpriteAtlas } from './sprites';
 import { ATLAS_ASSET_BASE, loadTree } from './tree-loader';
@@ -29,6 +29,7 @@ import type { SolverResponse } from './solver.worker';
 import type { Tree, TreeNode } from './tree-types';
 
 type Mode = 'path' | 'targets';
+type SolveTier = 'fast' | 'full';
 
 interface NodeChip {
   idx: number;
@@ -56,6 +57,7 @@ interface StoredState {
   mode: Mode;
   allocated: string[];
   targets: string[];
+  excluded: string[];
 }
 
 @Component({
@@ -72,6 +74,7 @@ export class Atlas {
   readonly routeCount = signal(0);
   readonly totalPoints = signal(138);
   readonly targets = signal<NodeChip[]>([]);
+  readonly excluded = signal<NodeChip[]>([]);
   readonly status = signal('No targets picked');
   readonly notice = signal('');
   readonly loading = signal('Loading atlas tree...');
@@ -88,6 +91,9 @@ export class Atlas {
   // up to a thousand entries, so copying them on each edit would be wasteful.
   private allocated = new Set<number>();
   private targetSet = new Set<number>();
+  private excludedSet = new Set<number>();
+  /** `graph` with excluded nodes isolated — what every search actually walks. */
+  private searchGraph: Graph | null = null;
   private route = new Set<number>();
   private preview = new Set<number>();
   private hovered: number | null = null;
@@ -98,7 +104,9 @@ export class Atlas {
   private frame = 0;
   private solveId = 0;
   private solving = false;
-  private solveTimer: ReturnType<typeof setTimeout> | null = null;
+  private fastTimer: ReturnType<typeof setTimeout> | null = null;
+  private fullTimer: ReturnType<typeof setTimeout> | null = null;
+  private tier: SolveTier = 'full';
 
   private dragging = false;
   private dragMoved = 0;
@@ -177,7 +185,7 @@ export class Atlas {
   private teardown(): void {
     this.worker?.terminate();
     this.worker = null;
-    if (this.solveTimer !== null) clearTimeout(this.solveTimer);
+    this.cancelPendingSolves();
     if (this.frame) cancelAnimationFrame(this.frame);
   }
 
@@ -187,6 +195,7 @@ export class Atlas {
       const state: RenderState = {
         allocated: this.allocated,
         targets: this.targetSet,
+        excluded: this.excludedSet,
         route: this.mode() === 'targets' ? this.route : new Set<number>(),
         preview: this.preview,
         hovered: this.hovered,
@@ -215,9 +224,14 @@ export class Atlas {
         const node = tree.byId.get(id);
         if (node?.allocatable) this.targetSet.add(node.idx);
       }
+      for (const id of saved.excluded ?? []) {
+        const node = tree.byId.get(id);
+        if (node?.allocatable && !this.targetSet.has(node.idx)) this.excludedSet.add(node.idx);
+      }
     } catch {
       // corrupt or unavailable storage is not worth failing the tool over
     }
+    this.rebuildSearchGraph();
     this.syncCounts();
     if (this.targetSet.size) this.solve();
   }
@@ -230,6 +244,7 @@ export class Atlas {
       mode: this.mode(),
       allocated: ids(this.allocated),
       targets: ids(this.targetSet),
+      excluded: ids(this.excludedSet),
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -242,15 +257,16 @@ export class Atlas {
     const tree = this.tree;
     this.allocatedCount.set(this.allocated.size);
     this.routeCount.set(this.route.size);
-    this.targets.set(
+    const chips = (set: Set<number>): NodeChip[] =>
       tree
-        ? [...this.targetSet].map((idx) => ({
+        ? [...set].map((idx) => ({
             idx,
             name: tree.nodes[idx].name,
             kind: tree.nodes[idx].kind,
           }))
-        : [],
-    );
+        : [];
+    this.targets.set(chips(this.targetSet));
+    this.excluded.set(chips(this.excludedSet));
     this.dirty = true;
   }
 
@@ -268,6 +284,62 @@ export class Atlas {
     this.persist();
   }
 
+  // ----------------------------------------------------------- exclusions ---
+
+  /**
+   * Rebuilt whenever the exclusion set changes. Every search — manual pathing,
+   * the hover preview and the solver — walks this instead of the raw graph, so
+   * blocked nodes are invisible to all of them rather than each having to
+   * remember to skip them.
+   */
+  private rebuildSearchGraph(): void {
+    const graph = this.graph;
+    if (!graph) return;
+    if (this.excludedSet.size === 0) {
+      this.searchGraph = graph;
+      return;
+    }
+    const mask = new Uint8Array(graph.n);
+    for (const v of this.excludedSet) mask[v] = 1;
+    this.searchGraph = withoutBlocked(graph, mask);
+  }
+
+  private search(): Graph | null {
+    return this.searchGraph ?? this.graph;
+  }
+
+  /** Blocking a node also drops it as a target and unallocates it. */
+  toggleExcluded(idx: number): void {
+    const tree = this.tree;
+    if (!tree || !tree.nodes[idx].allocatable) return;
+    if (this.excludedSet.has(idx)) {
+      this.excludedSet.delete(idx);
+    } else {
+      this.excludedSet.add(idx);
+      this.targetSet.delete(idx);
+      if (this.allocated.has(idx)) this.dropAllocation(idx);
+    }
+    this.rebuildSearchGraph();
+    this.preview.clear();
+    this.notice.set('');
+    this.solve();
+    this.changed();
+  }
+
+  removeExclusion(idx: number): void {
+    this.excludedSet.delete(idx);
+    this.rebuildSearchGraph();
+    this.solve();
+    this.changed();
+  }
+
+  clearExcluded(): void {
+    this.excludedSet.clear();
+    this.rebuildSearchGraph();
+    this.solve();
+    this.changed();
+  }
+
   // ------------------------------------------------------------ allocation ---
 
   /** BFS sources: the free centre node plus everything already allocated. */
@@ -277,12 +349,20 @@ export class Atlas {
   }
 
   private allocatePathTo(idx: number): void {
-    const graph = this.graph;
+    const graph = this.search();
     const tree = this.tree;
     if (!graph || !tree) return;
+    if (this.excludedSet.has(idx)) {
+      this.notice.set('That node is blocked. Right-click it to unblock.');
+      return;
+    }
     bfs(graph, this.sources(), this.dist, this.parent);
     if (this.dist[idx] < 0) {
-      this.notice.set('There is no path to that node.');
+      this.notice.set(
+        this.excludedSet.size
+          ? 'No path to that node — blocked nodes are in the way.'
+          : 'There is no path to that node.',
+      );
       return;
     }
     for (const v of walkBack(this.parent, idx)) {
@@ -293,9 +373,16 @@ export class Atlas {
   }
 
   private deallocate(idx: number): void {
-    const graph = this.graph;
+    if (!this.allocated.has(idx)) return;
+    this.dropAllocation(idx);
+    this.changed();
+  }
+
+  /** Removes a node and everything that was only reachable through it. */
+  private dropAllocation(idx: number): void {
+    const graph = this.search();
     const tree = this.tree;
-    if (!graph || !tree || !this.allocated.has(idx)) return;
+    if (!graph || !tree) return;
     this.allocated.delete(idx);
     // Anything that hung off this node loses its connection to the centre.
     const withRoot = new Set(this.allocated);
@@ -303,16 +390,31 @@ export class Atlas {
     const kept = connectedWithin(graph, withRoot, tree.rootIdx);
     kept.delete(tree.rootIdx);
     this.allocated = kept;
-    this.changed();
   }
 
   // --------------------------------------------------------------- solving ---
 
-  /** Debounced so clicking several targets in a row only costs one solve. */
+  private cancelPendingSolves(): void {
+    if (this.fastTimer !== null) clearTimeout(this.fastTimer);
+    if (this.fullTimer !== null) clearTimeout(this.fullTimer);
+    this.fastTimer = null;
+    this.fullTimer = null;
+  }
+
+  /**
+   * Two tiers, because the useful thing about this mode is seeing what a target
+   * costs the instant you click it, and a full search takes seconds once there
+   * are a dozen targets.
+   *
+   * The fast tier is heuristic-only and lands in ~150 ms, so the number keeps up
+   * with clicking. The exact tier only fires once you have stopped for a moment,
+   * and it is what upgrades the answer to a proven optimum. In testing the
+   * heuristic already matched the optimum nearly every time, so the fast number
+   * rarely changes when the exact one arrives.
+   */
   private solve(): void {
-    if (this.solveTimer !== null) clearTimeout(this.solveTimer);
+    this.cancelPendingSolves();
     if (this.targetSet.size === 0) {
-      this.solveTimer = null;
       this.route.clear();
       this.routeCount.set(0);
       this.status.set('No targets picked');
@@ -320,25 +422,31 @@ export class Atlas {
       return;
     }
     this.status.set('Solving...');
-    this.solveTimer = setTimeout(() => {
-      this.solveTimer = null;
-      this.runSolve();
-    }, 220);
+    this.fastTimer = setTimeout(() => {
+      this.fastTimer = null;
+      this.runSolve('fast');
+    }, 120);
+    this.fullTimer = setTimeout(() => {
+      this.fullTimer = null;
+      this.runSolve('full');
+    }, 1000);
   }
 
-  private runSolve(): void {
+  private runSolve(tier: SolveTier): void {
     // The worker searches synchronously, so the only way to abandon a stale run
     // is to throw the worker away and start over.
     if (this.solving) this.startWorker();
     const tree = this.tree;
     if (!this.worker || !tree) return;
     this.solving = true;
+    this.tier = tier;
     this.worker.postMessage({
       type: 'solve',
       id: ++this.solveId,
       terminals: [tree.rootIdx, ...this.targetSet],
-      heuristicMs: this.targetSet.size > 12 ? 700 : 350,
-      exactMs: 8000,
+      blocked: [...this.excludedSet],
+      heuristicMs: tier === 'fast' ? 120 : this.targetSet.size > 12 ? 700 : 350,
+      exactMs: tier === 'fast' ? 0 : 8000,
     });
   }
 
@@ -358,20 +466,31 @@ export class Atlas {
     this.route = new Set(result.nodes);
     this.route.delete(tree.rootIdx);
     const cost = this.route.size;
-    const flag = result.optimal ? '✓ optimal' : '≈ ' + result.note;
-    const unreachable = result.unreachable.length
-      ? ` · ${result.unreachable.length} unreachable`
-      : '';
+    const flag = result.optimal
+      ? '✓ optimal'
+      : this.tier === 'fast'
+        ? '≈ estimate, refining…'
+        : '≈ ' + result.note;
     const targets = this.targetSet.size;
+    const missed = result.unreachable.length;
+    // Say "3 of 4" rather than "4" when blocks have cut some targets off, so the
+    // number is never read as covering more than it does.
+    const scope = missed
+      ? `${targets - missed} of ${targets} targets`
+      : `${targets} ${plural(targets, 'target')}`;
     this.status.set(
-      `${cost} ${plural(cost, 'point')} for ${targets} ${plural(targets, 'target')}` +
-        ` · ${flag} · ${Math.round(result.ms)} ms${unreachable}`,
+      `${cost} ${plural(cost, 'point')} for ${scope} · ${flag} · ${Math.round(result.ms)} ms`,
     );
-    this.notice.set(
-      cost > this.totalPoints()
-        ? `This route needs ${cost} points, over the ${this.totalPoints()} point limit.`
-        : '',
-    );
+    if (missed) {
+      this.notice.set(
+        `${missed} ${plural(missed, 'target')} cannot be reached — blocked nodes cut ` +
+          `${missed === 1 ? 'it' : 'them'} off.`,
+      );
+    } else if (cost > this.totalPoints()) {
+      this.notice.set(`This route needs ${cost} points, over the ${this.totalPoints()} point limit.`);
+    } else {
+      this.notice.set('');
+    }
     this.routeCount.set(cost);
     this.dirty = true;
   }
@@ -420,8 +539,10 @@ export class Atlas {
   resetAll(): void {
     this.allocated.clear();
     this.targetSet.clear();
+    this.excludedSet.clear();
     this.route.clear();
     this.notice.set('');
+    this.rebuildSearchGraph();
     this.solve();
     this.changed();
   }
@@ -509,6 +630,14 @@ export class Atlas {
     if (node) this.onNodeClick(node);
   }
 
+  /** Right-click blocks or unblocks whatever is under the cursor. */
+  onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    const rect = this.canvasRef().nativeElement.getBoundingClientRect();
+    const node = this.renderer?.pick(event.clientX - rect.left, event.clientY - rect.top);
+    if (node?.allocatable) this.toggleExcluded(node.idx);
+  }
+
   onPointerLeave(): void {
     this.hovered = null;
     this.preview.clear();
@@ -532,7 +661,7 @@ export class Atlas {
 
   private onHover(sx: number, sy: number, clientX: number, clientY: number): void {
     const renderer = this.renderer;
-    const graph = this.graph;
+    const graph = this.search();
     const tree = this.tree;
     if (!renderer || !graph || !tree) return;
 
@@ -541,7 +670,13 @@ export class Atlas {
     if (idx !== this.hovered) {
       this.hovered = idx;
       this.preview.clear();
-      if (node && this.mode() === 'path' && !this.allocated.has(node.idx) && node.allocatable) {
+      if (
+        node &&
+        this.mode() === 'path' &&
+        !this.allocated.has(node.idx) &&
+        !this.excludedSet.has(node.idx) &&
+        node.allocatable
+      ) {
         bfs(graph, this.sources(), this.dist, this.parent);
         if (this.dist[node.idx] >= 0) {
           for (const v of walkBack(this.parent, node.idx)) this.preview.add(v);
@@ -556,10 +691,18 @@ export class Atlas {
   private buildTooltip(node: TreeNode, clientX: number, clientY: number): TooltipView | null {
     if (node.kind === 'root') return null;
     let hint = '';
-    if (this.mode() === 'targets' && node.allocatable) {
-      hint = this.targetSet.has(node.idx) ? 'Click to remove target' : 'Click to add as target';
-    } else if (node.allocatable && !this.allocated.has(node.idx) && this.preview.size) {
-      hint = `+${this.preview.size} point(s)`;
+    if (!node.allocatable) {
+      hint = '';
+    } else if (this.excludedSet.has(node.idx)) {
+      hint = 'Blocked · right-click to unblock';
+    } else if (this.mode() === 'targets') {
+      hint = this.targetSet.has(node.idx)
+        ? 'Click to remove target · right-click to block'
+        : 'Click to add as target · right-click to block';
+    } else if (!this.allocated.has(node.idx) && this.preview.size) {
+      hint = `+${this.preview.size} point(s) · right-click to block`;
+    } else {
+      hint = 'Right-click to block';
     }
     return {
       // offset so the cursor never sits on top of the box

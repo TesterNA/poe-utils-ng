@@ -139,15 +139,18 @@ export function solveSteiner(
   let note = 'heuristic';
 
   // --- exact pass -----------------------------------------------------------
+  // exactMs of 0 means the caller only wants a quick answer (the fast tier the
+  // UI runs while you are still clicking), so skip the whole pass rather than
+  // allocating its table and timing out on the first deadline check.
   const ub = best.length - 1; // edges
-  const allowed = pruneVertices(g, live, dists, ub);
+  const allowed = exactMs > 0 ? pruneVertices(g, live, dists, ub) : new Uint8Array(0);
   let allowedCount = 0;
-  for (let i = 0; i < g.n; i++) if (allowed[i]) allowedCount++;
+  for (let i = 0; i < allowed.length; i++) if (allowed[i]) allowedCount++;
 
   const subsets = 1 << (k - 1);
   const mergeOps = (Math.pow(3, k - 1) / 2) * allowedCount;
   const memory = subsets * allowedCount;
-  if (k <= 24 && mergeOps <= 3e9 && memory <= 2e7) {
+  if (exactMs > 0 && k <= 24 && mergeOps <= 3e9 && memory <= 2e7) {
     progress('exact search', 0.5);
     const exact = dreyfusWagner(g, live, allowed, ub, now() + exactMs, (f) =>
       progress('exact search', 0.5 + f * 0.5),
@@ -160,7 +163,7 @@ export function solveSteiner(
     } else {
       note = 'heuristic (exact search ran out of time)';
     }
-  } else {
+  } else if (exactMs > 0) {
     // No exact pass for this instance — spend that time searching harder instead.
     improve(Math.min(exactMs, heuristicMs * 4), 0.95);
     note = 'heuristic (too many targets for an exact search)';

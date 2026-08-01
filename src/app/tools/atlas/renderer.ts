@@ -11,6 +11,8 @@ export interface RenderState {
   allocated: Set<number>;
   /** mode 2: nodes the user demanded */
   targets: Set<number>;
+  /** nodes the route must never pass through */
+  excluded: Set<number>;
   /** mode 2: the computed minimal tree */
   route: Set<number>;
   /** mode 1: path that a click would allocate right now */
@@ -25,6 +27,7 @@ const COLORS = {
   linePreview: '#5ec8ff',
   lineRoute: '#ff9d3a',
   target: '#ff4d4d',
+  excluded: '#c2413f',
   hover: '#ffffff',
 };
 
@@ -256,10 +259,17 @@ export class Renderer {
       }
       if (node.kind === 'root') continue;
 
+      const excluded = state.excluded.has(node.idx);
       const allocated = state.allocated.has(node.idx);
       const inRoute = state.route.has(node.idx);
       const inPreview = state.preview.has(node.idx);
       const active = allocated || inRoute || inPreview;
+
+      // Blocked nodes are dimmed so the eye skips them the way the solver does.
+      if (excluded) {
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+      }
 
       const sheet = active ? 'Active' : 'Inactive';
       const iconGroup =
@@ -276,8 +286,12 @@ export class Renderer {
       const frameKey = frameFor(node.kind, active);
       if (frameKey) this.sprites.draw(ctx, 'frame', frameKey, node.x, node.y);
 
+      if (excluded) ctx.restore();
+
       if (inPreview && !allocated) ring(ctx, node, COLORS.linePreview, 7);
       else if (inRoute && !allocated) ring(ctx, node, COLORS.lineRoute, 7);
+
+      if (excluded) cross(ctx, node, COLORS.excluded, 9);
 
       if (state.targets.has(node.idx)) {
         ring(ctx, node, COLORS.target, 11, 1.14);
@@ -308,6 +322,32 @@ function frameFor(kind: TreeNode['kind'], active: boolean): string | null {
     default:
       return null;
   }
+}
+
+/** Struck-through marker drawn over a blocked node. */
+function cross(
+  ctx: CanvasRenderingContext2D,
+  node: TreeNode,
+  color: string,
+  width: number,
+): void {
+  const r = node.radius * 0.72;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(node.x - r, node.y - r);
+  ctx.lineTo(node.x + r, node.y + r);
+  ctx.moveTo(node.x + r, node.y - r);
+  ctx.lineTo(node.x - r, node.y + r);
+  ctx.stroke();
+  ctx.globalAlpha = 0.75;
+  ctx.lineWidth = Math.max(3, width * 0.6);
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function ring(

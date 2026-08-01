@@ -1655,3 +1655,28 @@ input[type="range"]::-moz-range-thumb {
     border-top: 1px solid var(--border);
   }
 }
+
+/* Blocked (excluded) nodes in the Atlas Selector */
+.atlas-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.atlas-link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.atlas-link-btn:hover { color: var(--accent); }
+.atlas-target.atlas-blocked {
+  border-left-color: #c2413f;
+  color: var(--text-dim);
+  text-decoration: line-through;
+}

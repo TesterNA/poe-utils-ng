@@ -1,12 +1,20 @@
 /* Solver worker for the Atlas Selector.
    Deliberately has no `/// <reference lib="webworker" />`: it is compiled under
    the app tsconfig, whose DOM lib would clash with the webworker one. */
-import type { Graph } from './graph';
+import { withoutBlocked, type Graph } from './graph';
 import { solveSteiner, type SteinerResult } from './steiner';
 
 export type SolverRequest =
   | { type: 'init'; n: number; offsets: ArrayBuffer; adjacency: ArrayBuffer }
-  | { type: 'solve'; id: number; terminals: number[]; heuristicMs?: number; exactMs?: number };
+  | {
+      type: 'solve';
+      id: number;
+      terminals: number[];
+      /** nodes the route may not pass through */
+      blocked?: number[];
+      heuristicMs?: number;
+      exactMs?: number;
+    };
 
 export type SolverResponse =
   | { type: 'ready' }
@@ -30,7 +38,16 @@ addEventListener('message', (ev: MessageEvent<SolverRequest>) => {
   if (msg.type === 'solve') {
     if (!graph) return;
     latest = msg.id;
-    const result = solveSteiner(graph, msg.terminals, {
+    let search = graph;
+    if (msg.blocked?.length) {
+      const mask = new Uint8Array(graph.n);
+      for (const v of msg.blocked) mask[v] = 1;
+      // Terminals win over exclusions; the UI keeps them mutually exclusive
+      // anyway, but a stale message must not produce an unsolvable graph.
+      for (const t of msg.terminals) mask[t] = 0;
+      search = withoutBlocked(graph, mask);
+    }
+    const result = solveSteiner(search, msg.terminals, {
       heuristicMs: msg.heuristicMs,
       exactMs: msg.exactMs,
       onProgress: (phase, fraction) => {

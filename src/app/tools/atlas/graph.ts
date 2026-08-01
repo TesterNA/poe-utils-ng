@@ -43,6 +43,31 @@ export function bfs(
   }
 }
 
+/**
+ * Copy of `g` with every blocked vertex isolated — its edges are dropped in
+ * both directions, so nothing can route through it. Indices are unchanged, so
+ * every caller keeps working against the same node numbering; a blocked vertex
+ * simply becomes unreachable.
+ *
+ * Doing it once up front is what keeps the solver itself oblivious to
+ * exclusions: BFS, pruning and the exact pass all just see a smaller graph.
+ */
+export function withoutBlocked(g: Graph, blocked: Uint8Array): Graph {
+  const offsets = new Int32Array(g.n + 1);
+  const kept: number[] = [];
+  for (let v = 0; v < g.n; v++) {
+    offsets[v] = kept.length;
+    if (!blocked[v]) {
+      for (let e = g.offsets[v]; e < g.offsets[v + 1]; e++) {
+        const u = g.adjacency[e];
+        if (!blocked[u]) kept.push(u);
+      }
+    }
+  }
+  offsets[g.n] = kept.length;
+  return { n: g.n, offsets, adjacency: Int32Array.from(kept) };
+}
+
 /** Walks `parent` back from `target` to its BFS source. Returns [source … target]. */
 export function walkBack(parent: Int32Array, target: number): number[] {
   const path: number[] = [];
