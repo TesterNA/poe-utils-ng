@@ -30,7 +30,12 @@
       <div class="section-label">Atlas Selector</div>
       <div class="atlas-points">
         <span [class.over]="allocatedCount() > totalPoints()">{{ allocatedCount() }}</span
-        ><span class="atlas-points-sep">&nbsp;/&nbsp;</span>{{ totalPoints() }}
+        ><span class="atlas-points-sep">&nbsp;/&nbsp;</span>{{ basePoints() }}
+        @if (bonusPoints() > 0) {
+          <span class="atlas-points-bonus" title="Granted by allocated nodes"
+            >(+{{ bonusPoints() }})</span
+          >
+        }
       </div>
     </div>
 
@@ -60,19 +65,22 @@
 
       <div class="atlas-status">{{ status() }}</div>
 
-      <div class="atlas-btn-row">
-        <button class="poe-btn poe-btn-green" [disabled]="routeCount() === 0" (click)="applyRoute()">
-          Apply route
-        </button>
-        <button class="poe-btn poe-btn-dim" [disabled]="targets().length === 0" (click)="clearTargets()">
-          Clear
-        </button>
-      </div>
+      <button
+        class="poe-btn poe-btn-green atlas-btn-wide"
+        [disabled]="routeCount() === 0"
+        (click)="applyRoute()"
+      >
+        Apply route
+      </button>
       <button class="poe-btn poe-btn-blue atlas-btn-wide" (click)="seedFromAllocated()">
         Target current notables
       </button>
 
       @if (targets().length) {
+        <div class="atlas-list-head">
+          <div class="section-label">Targets ({{ targets().length }})</div>
+          <button type="button" class="atlas-link-btn" (click)="clearTargets()">clear</button>
+        </div>
         <ul class="atlas-target-list">
           @for (t of targets(); track t.idx) {
             <li class="atlas-target" [class]="'kind-' + t.kind" (mouseenter)="highlight(t.idx)">
@@ -85,7 +93,7 @@
     }
 
     @if (excluded().length) {
-      <div class="atlas-block-head">
+      <div class="atlas-list-head">
         <div class="section-label">Blocked ({{ excluded().length }})</div>
         <button type="button" class="atlas-link-btn" (click)="clearExcluded()">clear</button>
       </div>
@@ -125,7 +133,13 @@
         <div class="atlas-notice">{{ notice() }}</div>
       }
       <div class="atlas-btn-row">
-        <button class="poe-btn poe-btn-red" (click)="resetAll()">Reset all</button>
+        <button
+          class="poe-btn poe-btn-red"
+          title="Clears the allocated tree, all targets and all blocked nodes"
+          (click)="resetAll()"
+        >
+          Reset all
+        </button>
         <button class="poe-btn poe-btn-dim" (click)="fitToScreen()">Fit</button>
       </div>
     </div>

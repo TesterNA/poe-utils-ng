@@ -1657,7 +1657,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* Blocked (excluded) nodes in the Atlas Selector */
-.atlas-block-head {
+.atlas-list-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1679,4 +1679,10 @@ input[type="range"]::-moz-range-thumb {
   border-left-color: #c2413f;
   color: var(--text-dim);
   text-decoration: line-through;
+}
+.atlas-points-bonus {
+  margin-left: 2px;
+  color: var(--green);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
 }

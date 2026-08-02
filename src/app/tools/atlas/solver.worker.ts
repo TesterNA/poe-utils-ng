@@ -12,6 +12,8 @@ export type SolverRequest =
       terminals: number[];
       /** nodes the route may not pass through */
       blocked?: number[];
+      /** tie-break cost per node, only used to choose between equal-size trees */
+      penalties?: number[];
       heuristicMs?: number;
       exactMs?: number;
     };
@@ -50,6 +52,7 @@ addEventListener('message', (ev: MessageEvent<SolverRequest>) => {
     const result = solveSteiner(search, msg.terminals, {
       heuristicMs: msg.heuristicMs,
       exactMs: msg.exactMs,
+      penalties: msg.penalties ? Int32Array.from(msg.penalties) : undefined,
       onProgress: (phase, fraction) => {
         // A newer request arrived — stop reporting for the stale one.
         if (msg.id === latest) post({ type: 'progress', id: msg.id, phase, fraction });

@@ -1,4 +1,4 @@
-import { bfs, UNREACHABLE, walkBack, type Graph } from './graph';
+import { bfs, UNREACHABLE, walkBack, withoutBlocked, type Graph } from './graph';
 
 export interface SteinerOptions {
   /** milliseconds spent on randomised construction + local search */
@@ -7,6 +7,12 @@ export interface SteinerOptions {
   exactMs?: number;
   onProgress?: (phase: string, fraction: number) => void;
   seed?: number;
+  /**
+   * Per-node tie-break cost, indexed by node. Point count stays the objective —
+   * this only chooses between trees of the *same* size, so a lower-penalty node
+   * is never taken at the price of an extra point. Absent means no preference.
+   */
+  penalties?: Int32Array;
 }
 
 export interface SteinerResult {
@@ -54,6 +60,17 @@ export function solveSteiner(
   const exactMs = opts.exactMs ?? 8000;
   const progress = opts.onProgress ?? (() => {});
 
+  const penalties = opts.penalties ?? new Int32Array(g.n);
+  const penaltyOf = (nodes: number[]) => {
+    let sum = 0;
+    for (const v of nodes) sum += penalties[v];
+    return sum;
+  };
+  /** Fewer points wins; among equal-size trees, the less objectionable one. */
+  const isBetter = (candidate: number[], incumbent: number[]) =>
+    candidate.length < incumbent.length ||
+    (candidate.length === incumbent.length && penaltyOf(candidate) < penaltyOf(incumbent));
+
   const terminals = [...new Set(rawTerminals)];
   if (terminals.length === 0) {
     return { nodes: [], cost: 0, optimal: true, unreachable: [], ms: 0, note: 'empty' };
@@ -100,7 +117,7 @@ export function solveSteiner(
   progress('searching', 0.05);
   let rng = makeRng(opts.seed ?? 12345);
   let best = shortestPathHeuristic(g, live, dists, parents, 0, rng);
-  best = minimiseSet(g, best, live);
+  best = minimiseSet(g, best, live, penalties);
 
   // Nodes that sit "between" many terminals make the best extra Steiner points,
   // so try those first before falling back to random ones near the current tree.
@@ -123,8 +140,9 @@ export function solveSteiner(
         g,
         shortestPathHeuristic(g, live, dists, parents, startIdx, rng, [...guides, ...extra]),
         live,
+        penalties,
       );
-      if (candidate.length < best.length) {
+      if (isBetter(candidate, best)) {
         best = candidate;
         guides = [...guides, ...extra].slice(-6);
       }
@@ -158,8 +176,8 @@ export function solveSteiner(
     if (exact) {
       optimal = true;
       note = 'optimal';
-      const cleaned = minimiseSet(g, exact, live);
-      if (cleaned.length < best.length) best = cleaned;
+      const cleaned = minimiseSet(g, exact, live, penalties);
+      if (isBetter(cleaned, best)) best = cleaned;
     } else {
       note = 'heuristic (exact search ran out of time)';
     }
@@ -181,6 +199,15 @@ export function solveSteiner(
     note = 'heuristic (too many targets for an exact search)';
   }
 
+  // The searches above settle for any tree of the winning size, so a pure
+  // connector can end up in it where an equally cheap node with a useful stat
+  // would do. This trades those out without ever adding a point.
+  if (penaltyOf(best) > 0) {
+    // The fast tier is meant to land in ~150ms, so it only gets a token pass.
+    const swapMs = exactMs > 0 ? 250 : 50;
+    best = swapOutPenalisedNodes(g, best, live, penalties, isBetter, now() + swapMs);
+  }
+
   progress('done', 1);
   return {
     nodes: best,
@@ -194,6 +221,78 @@ export function solveSteiner(
 
 function now(): number {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+/**
+ * Same size, better nodes. For each penalised non-terminal in the tree, rebuild
+ * the tree with that node removed from the graph entirely; adopt the result only
+ * if it is no larger and less objectionable. Point count can therefore never go
+ * up, which is what lets the "optimal" label survive this pass.
+ */
+function swapOutPenalisedNodes(
+  g: Graph,
+  tree: number[],
+  terminals: number[],
+  penalties: Int32Array,
+  isBetter: (candidate: number[], incumbent: number[]) => boolean,
+  deadline: number,
+): number[] {
+  const required = new Set(terminals);
+  let best = tree;
+  let progressed = true;
+
+  while (progressed && now() < deadline) {
+    progressed = false;
+    // Worst first, and capped: past the gateways and keystones the remaining
+    // candidates are plain nodes swapping for other plain nodes.
+    const worst = best
+      .filter((v) => !required.has(v) && penalties[v] > 0)
+      .sort((a, b) => penalties[b] - penalties[a])
+      .slice(0, 24);
+
+    for (const victim of worst) {
+      if (now() > deadline) break;
+      const mask = new Uint8Array(g.n);
+      mask[victim] = 1;
+      const sub = withoutBlocked(g, mask);
+
+      const dists: Int32Array[] = [];
+      const parents: Int32Array[] = [];
+      let reachable = true;
+      for (const t of terminals) {
+        const d = new Int32Array(g.n);
+        const p = new Int32Array(g.n);
+        bfs(sub, [t], d, p);
+        if (terminals.some((other) => d[other] === UNREACHABLE)) {
+          reachable = false;
+          break;
+        }
+        dists.push(d);
+        parents.push(p);
+      }
+      if (!reachable) continue; // this node is a cut vertex, it has to stay
+
+      // One greedy construction often comes back larger and gets rejected even
+      // though a same-size alternative exists, so grow from every terminal and
+      // keep the best of those. k BFS runs each, which is nothing at this size.
+      let rebuilt: number[] | null = null;
+      for (let start = 0; start < terminals.length; start++) {
+        const attempt = minimiseSet(
+          sub,
+          shortestPathHeuristic(sub, terminals, dists, parents, start, () => 0),
+          terminals,
+          penalties,
+        );
+        if (rebuilt === null || isBetter(attempt, rebuilt)) rebuilt = attempt;
+      }
+      if (rebuilt && isBetter(rebuilt, best)) {
+        best = rebuilt;
+        progressed = true;
+        break;
+      }
+    }
+  }
+  return best;
 }
 
 /** The `limit` nodes with the smallest total distance to every terminal. */
@@ -289,13 +388,23 @@ function shortestPathHeuristic(
  * Drops every node that is not needed: leaves, and any redundant node left over
  * from a cycle in the induced subgraph. Cheap and reliably worth a point or two.
  */
-function minimiseSet(g: Graph, nodes: number[], terminals: number[]): number[] {
+function minimiseSet(
+  g: Graph,
+  nodes: number[],
+  terminals: number[],
+  penalties?: Int32Array,
+): number[] {
   const set = new Set(nodes);
   const required = new Set(terminals);
   let changed = true;
   while (changed) {
     changed = false;
-    const ordered = [...set].sort((a, b) => degreeIn(g, set, a) - degreeIn(g, set, b));
+    // Try the least useful nodes first, so when several are equally droppable
+    // the one we keep is the one worth having.
+    const ordered = [...set].sort(
+      (a, b) =>
+        (penalties ? penalties[b] - penalties[a] : 0) || degreeIn(g, set, a) - degreeIn(g, set, b),
+    );
     for (const v of ordered) {
       if (required.has(v)) continue;
       set.delete(v);

@@ -77,6 +77,8 @@ export interface TreeNode {
   y: number;
   /** hit-test / draw radius in tree units */
   radius: number;
+  /** extra atlas points this node itself grants when allocated (usually 0) */
+  grantsPoints: number;
   searchText: string;
 }
 

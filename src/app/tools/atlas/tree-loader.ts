@@ -27,6 +27,21 @@ const RADIUS: Record<NodeKind, number> = {
   root: 200,
 };
 
+/**
+ * A few nodes hand out atlas points of their own — Unwavering Vision grants 20.
+ * Read from the stat text so a new league's wording or a second such node is
+ * picked up without touching the code.
+ */
+const GRANTS_POINTS = /Grants (\d+) Atlas Passive Skill Points?/i;
+
+function pointsGranted(stats: string[]): number {
+  for (const stat of stats) {
+    const match = GRANTS_POINTS.exec(stat);
+    if (match) return Number(match[1]);
+  }
+  return 0;
+}
+
 function kindOf(id: string, raw: RawTree['nodes'][string]): NodeKind {
   if (id === 'root') return 'root';
   if (raw.isMastery) return 'mastery';
@@ -71,6 +86,7 @@ export function buildTree(raw: RawTree): Tree {
       x: (group?.x ?? 0) + radius * Math.sin(angle),
       y: (group?.y ?? 0) - radius * Math.cos(angle),
       radius: RADIUS[kind],
+      grantsPoints: pointsGranted(stats),
       searchText: `${r.name ?? ''}\n${stats.join('\n')}`.toLowerCase(),
     };
     nodes.push(node);

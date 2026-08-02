@@ -14,6 +14,7 @@
 import {
   afterNextRender,
   Component,
+  computed,
   DestroyRef,
   ElementRef,
   inject,
@@ -51,6 +52,20 @@ interface TooltipView {
   hint: string;
 }
 
+/**
+ * Tie-break cost per node kind, used only to pick between routes that cost the
+ * same number of points. Gateways are pure connectors and do nothing for you, so
+ * they are the last resort; keystones are avoided as incidental filler because
+ * they change how maps play and are rarely something you want by accident; a
+ * notable is strictly better value than a plain node for the same point.
+ */
+const KIND_PENALTY: Record<string, number> = {
+  wormhole: 8,
+  keystone: 4,
+  normal: 1,
+  notable: 0,
+};
+
 const STORAGE_KEY = 'poe_atlas_state';
 
 interface StoredState {
@@ -72,7 +87,10 @@ export class Atlas {
   readonly mode = signal<Mode>('path');
   readonly allocatedCount = signal(0);
   readonly routeCount = signal(0);
-  readonly totalPoints = signal(138);
+  readonly basePoints = signal(138);
+  /** Extra points granted by allocated nodes — Unwavering Vision hands out 20. */
+  readonly bonusPoints = signal(0);
+  readonly totalPoints = computed(() => this.basePoints() + this.bonusPoints());
   readonly targets = signal<NodeChip[]>([]);
   readonly excluded = signal<NodeChip[]>([]);
   readonly status = signal('No targets picked');
@@ -94,6 +112,7 @@ export class Atlas {
   private excludedSet = new Set<number>();
   /** `graph` with excluded nodes isolated — what every search actually walks. */
   private searchGraph: Graph | null = null;
+  private penalties: number[] = [];
   private route = new Set<number>();
   private preview = new Set<number>();
   private hovered: number | null = null;
@@ -142,7 +161,8 @@ export class Atlas {
       };
       this.dist = new Int32Array(this.graph.n);
       this.parent = new Int32Array(this.graph.n);
-      this.totalPoints.set(this.tree.totalPoints);
+      this.penalties = this.tree.nodes.map((n) => KIND_PENALTY[n.kind] ?? 0);
+      this.basePoints.set(this.tree.totalPoints);
 
       this.renderer = new Renderer(canvas, this.tree, sprites);
       this.renderer.fit();
@@ -253,9 +273,19 @@ export class Atlas {
     }
   }
 
+  /** Atlas points handed out by the nodes in `set`. */
+  private grantedBy(set: Set<number>): number {
+    const tree = this.tree;
+    if (!tree) return 0;
+    let total = 0;
+    for (const idx of set) total += tree.nodes[idx].grantsPoints;
+    return total;
+  }
+
   private syncCounts(): void {
     const tree = this.tree;
     this.allocatedCount.set(this.allocated.size);
+    this.bonusPoints.set(this.grantedBy(this.allocated));
     this.routeCount.set(this.route.size);
     const chips = (set: Set<number>): NodeChip[] =>
       tree
@@ -399,6 +429,11 @@ export class Atlas {
     if (this.fullTimer !== null) clearTimeout(this.fullTimer);
     this.fastTimer = null;
     this.fullTimer = null;
+    // Cancelling the timers does not stop a search the worker already started.
+    // Bumping the id makes any result still in flight stale, otherwise it lands
+    // afterwards and puts the route back — visible as a cleared route quietly
+    // reappearing a second or two after Reset all.
+    this.solveId++;
   }
 
   /**
@@ -445,6 +480,7 @@ export class Atlas {
       id: ++this.solveId,
       terminals: [tree.rootIdx, ...this.targetSet],
       blocked: [...this.excludedSet],
+      penalties: this.penalties,
       heuristicMs: tier === 'fast' ? 120 : this.targetSet.size > 12 ? 700 : 350,
       exactMs: tier === 'fast' ? 0 : 8000,
     });
@@ -481,13 +517,16 @@ export class Atlas {
     this.status.set(
       `${cost} ${plural(cost, 'point')} for ${scope} · ${flag} · ${Math.round(result.ms)} ms`,
     );
+    // Judge the route against its own budget: if it takes a node that grants
+    // points, those points are available to it.
+    const routeLimit = this.basePoints() + this.grantedBy(this.route);
     if (missed) {
       this.notice.set(
         `${missed} ${plural(missed, 'target')} cannot be reached — blocked nodes cut ` +
           `${missed === 1 ? 'it' : 'them'} off.`,
       );
-    } else if (cost > this.totalPoints()) {
-      this.notice.set(`This route needs ${cost} points, over the ${this.totalPoints()} point limit.`);
+    } else if (cost > routeLimit) {
+      this.notice.set(`This route needs ${cost} points, over the ${routeLimit} point limit.`);
     } else {
       this.notice.set('');
     }
