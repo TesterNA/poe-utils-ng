@@ -16,10 +16,21 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render one sidebar link per tool', () => {
+  it('should render one sidebar link per visible tool', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelectorAll('.nav-btn').length).toBe(TOOLS.length);
+    const visible = TOOLS.filter((tool) => !tool.hidden);
+    expect(compiled.querySelectorAll('.nav-btn').length).toBe(visible.length);
+  });
+
+  it('should keep hidden tools out of the sidebar', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const labels = [...compiled.querySelectorAll('.nav-btn')].map((el) => el.textContent?.trim());
+    for (const tool of TOOLS.filter((t) => t.hidden)) {
+      expect(labels).not.toContain(tool.label);
+    }
   });
 });

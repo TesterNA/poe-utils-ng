@@ -8,6 +8,8 @@ export interface ToolDef {
   label: string;
   /** inner markup of a 24x24 stroke icon */
   icon: string;
+  /** kept out of the sidebar; its route still works if you know the URL */
+  hidden?: boolean;
 }
 
 export const TOOLS: ToolDef[] = [
@@ -40,6 +42,7 @@ export const TOOLS: ToolDef[] = [
     id: 'trade',
     label: 'Bulk Trade Calc',
     icon: '<path d="M3 3h18v4H3zM3 10h18v4H3zM3 17h18v4H3z"/>',
+    hidden: true,
   },
   {
     id: 'atlas',

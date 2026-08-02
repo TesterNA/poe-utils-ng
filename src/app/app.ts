@@ -12,7 +12,7 @@ export class App {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly icons = new Map<string, SafeHtml>();
 
-  readonly tools = TOOLS;
+  readonly tools = TOOLS.filter((tool) => !tool.hidden);
   readonly sidebarOpen = signal(false);
 
   /** Icon markup comes from our own tools.ts literals, never from user input. */

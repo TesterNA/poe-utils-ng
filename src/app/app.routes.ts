@@ -32,6 +32,7 @@ export const routes: Routes = [
     loadComponent: () => import('./tools/exp/exp').then((m) => m.Exp),
   },
   {
+    // hidden from the sidebar (see tools.ts) but still reachable by URL
     path: 'trade',
     title: 'Bulk Trade Calc · PoE Tools',
     loadComponent: () => import('./tools/trade/trade').then((m) => m.Trade),

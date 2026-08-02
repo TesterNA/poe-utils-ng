@@ -32,7 +32,7 @@
         <span [class.over]="allocatedCount() > totalPoints()">{{ allocatedCount() }}</span
         ><span class="atlas-points-sep">&nbsp;/&nbsp;</span>{{ basePoints() }}
         @if (bonusPoints() > 0) {
-          <span class="atlas-points-bonus" title="Granted by allocated nodes"
+          <span class="atlas-points-bonus" title="Granted by nodes in the current tree or route"
             >(+{{ bonusPoints() }})</span
           >
         }

@@ -88,7 +88,7 @@ export class Atlas {
   readonly allocatedCount = signal(0);
   readonly routeCount = signal(0);
   readonly basePoints = signal(138);
-  /** Extra points granted by allocated nodes — Unwavering Vision hands out 20. */
+  /** Extra points granted by the tree on screen — Unwavering Vision hands out 20. */
   readonly bonusPoints = signal(0);
   readonly totalPoints = computed(() => this.basePoints() + this.bonusPoints());
   readonly targets = signal<NodeChip[]>([]);
@@ -273,6 +273,18 @@ export class Atlas {
     }
   }
 
+  /**
+   * Keeps the header's limit and the over-budget warning talking about the same
+   * budget. While you are planning in targets mode the route is what the warning
+   * judges, so its grants have to count towards the limit on screen too —
+   * otherwise the header says 138 while the warning says 158.
+   */
+  private refreshBudget(): void {
+    const granting = new Set(this.allocated);
+    if (this.mode() === 'targets') for (const v of this.route) granting.add(v);
+    this.bonusPoints.set(this.grantedBy(granting));
+  }
+
   /** Atlas points handed out by the nodes in `set`. */
   private grantedBy(set: Set<number>): number {
     const tree = this.tree;
@@ -285,8 +297,8 @@ export class Atlas {
   private syncCounts(): void {
     const tree = this.tree;
     this.allocatedCount.set(this.allocated.size);
-    this.bonusPoints.set(this.grantedBy(this.allocated));
     this.routeCount.set(this.route.size);
+    this.refreshBudget();
     const chips = (set: Set<number>): NodeChip[] =>
       tree
         ? [...set].map((idx) => ({
@@ -309,6 +321,7 @@ export class Atlas {
 
   setMode(mode: Mode): void {
     this.mode.set(mode);
+    this.refreshBudget();
     this.preview.clear();
     this.dirty = true;
     this.persist();
@@ -531,6 +544,7 @@ export class Atlas {
       this.notice.set('');
     }
     this.routeCount.set(cost);
+    this.refreshBudget();
     this.dirty = true;
   }
 
