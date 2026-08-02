@@ -22,6 +22,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { createAtlasDebug } from './atlas-debug';
 import { bfs, connectedWithin, walkBack, withoutBlocked, type Graph } from './graph';
 import { Renderer, type RenderState } from './renderer';
 import { SpriteAtlas } from './sprites';
@@ -166,6 +167,7 @@ export class Atlas {
 
       this.renderer = new Renderer(canvas, this.tree, sprites);
       this.renderer.fit();
+      this.exposeDebugHandle();
       this.startWorker();
       this.restore();
 
@@ -184,6 +186,31 @@ export class Atlas {
       this.loading.set(`Error: ${err instanceof Error ? err.message : String(err)}`);
       console.error(err);
     }
+  }
+
+  /**
+   * `atlasDebug` in the browser console — reads live state so a report from the
+   * deployed site can be pasted back verbatim. Kept in production builds because
+   * that is where the confusing states show up.
+   */
+  private exposeDebugHandle(): void {
+    const tree = this.tree;
+    if (!tree || typeof window === 'undefined') return;
+    const api = createAtlasDebug(tree, () => ({
+      mode: this.mode(),
+      allocated: this.allocated,
+      targets: this.targetSet,
+      excluded: this.excludedSet,
+      route: this.route,
+      basePoints: this.basePoints(),
+      bonusPoints: this.bonusPoints(),
+      status: this.status(),
+      notice: this.notice(),
+    }));
+    const holder = window as unknown as { atlasDebug?: unknown };
+    holder.atlasDebug = api;
+    this.destroyRef.onDestroy(() => delete holder.atlasDebug);
+    console.info('Atlas Selector: type atlasDebug.report() for a state dump');
   }
 
   private startWorker(): void {
