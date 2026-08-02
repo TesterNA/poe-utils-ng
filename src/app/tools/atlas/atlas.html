@@ -67,11 +67,21 @@
 
       <button
         class="poe-btn poe-btn-green atlas-btn-wide"
-        [disabled]="routeCount() === 0"
+        [disabled]="routeCount() === 0 || routeApplied()"
         (click)="applyRoute()"
       >
-        Apply route
+        @if (routeApplied() && routeCount() > 0) {
+          Route applied
+        } @else {
+          Apply route · {{ routeCount() }} pts
+        }
       </button>
+      @if (!routeApplied() && allocatedCount() > 0) {
+        <div class="atlas-drift">
+          Your tree has {{ allocatedCount() }} points; the route above is
+          {{ routeCount() }}. Apply it to catch up.
+        </div>
+      }
       <button class="poe-btn poe-btn-blue atlas-btn-wide" (click)="seedFromAllocated()">
         Target current notables
       </button>

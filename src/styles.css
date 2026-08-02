@@ -1686,3 +1686,12 @@ input[type="range"]::-moz-range-thumb {
   font-family: 'Rajdhani', sans-serif;
   font-size: 13px;
 }
+.atlas-drift {
+  padding: 6px 9px;
+  border-left: 3px solid var(--blue);
+  border-radius: 2px;
+  background: rgba(74,143,212,0.08);
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.4;
+}

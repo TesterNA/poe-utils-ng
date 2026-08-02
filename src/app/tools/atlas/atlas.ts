@@ -88,6 +88,14 @@ export class Atlas {
   readonly mode = signal<Mode>('path');
   readonly allocatedCount = signal(0);
   readonly routeCount = signal(0);
+  /**
+   * False when the tree you applied is not the route currently on screen. The
+   * solver keeps refining after you press Apply — the fast tier lands first and
+   * the exact pass can beat it a moment later — so without this the header shows
+   * the tree you applied while the status line quotes a better route, and the
+   * two numbers look like a bug.
+   */
+  readonly routeApplied = signal(true);
   readonly basePoints = signal(138);
   /** Extra points granted by the tree on screen — Unwavering Vision hands out 20. */
   readonly bonusPoints = signal(0);
@@ -325,6 +333,7 @@ export class Atlas {
     const tree = this.tree;
     this.allocatedCount.set(this.allocated.size);
     this.routeCount.set(this.route.size);
+    this.routeApplied.set(sameSet(this.allocated, this.route));
     this.refreshBudget();
     const chips = (set: Set<number>): NodeChip[] =>
       tree
@@ -571,6 +580,7 @@ export class Atlas {
       this.notice.set('');
     }
     this.routeCount.set(cost);
+    this.routeApplied.set(sameSet(this.allocated, this.route));
     this.refreshBudget();
     this.dirty = true;
   }
@@ -809,6 +819,12 @@ export class Atlas {
     else this.allocatePathTo(node.idx);
   }
 
+}
+
+function sameSet(a: Set<number>, b: Set<number>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
 }
 
 function plural(count: number, word: string): string {
