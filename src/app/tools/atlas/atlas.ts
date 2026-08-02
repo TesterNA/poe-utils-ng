@@ -249,7 +249,10 @@ export class Atlas {
       this.dirty = false;
       const state: RenderState = {
         allocated: this.allocated,
-        targets: this.targetSet,
+        // Targets and the route only mean something while you are planning, so
+        // mode 1 draws neither — leaving the markers up made a finished tree
+        // look like it still had pending work.
+        targets: this.mode() === 'targets' ? this.targetSet : new Set<number>(),
         excluded: this.excludedSet,
         route: this.mode() === 'targets' ? this.route : new Set<number>(),
         preview: this.preview,
@@ -592,6 +595,12 @@ export class Atlas {
     if (!tree) return;
     this.allocated = new Set(this.route);
     this.allocated.delete(tree.rootIdx);
+    // The plan is now the tree, so the planning state goes away rather than
+    // lingering and being quietly re-solved behind your back. "Target current
+    // notables" rebuilds an equivalent target list from the tree in one click.
+    this.targetSet.clear();
+    this.route.clear();
+    this.solve();
     this.changed();
   }
 

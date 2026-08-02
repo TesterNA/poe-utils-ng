@@ -70,13 +70,15 @@
         [disabled]="routeCount() === 0 || routeApplied()"
         (click)="applyRoute()"
       >
-        @if (routeApplied() && routeCount() > 0) {
+        @if (routeCount() === 0) {
+          Apply route
+        } @else if (routeApplied()) {
           Route applied
         } @else {
           Apply route · {{ routeCount() }} pts
         }
       </button>
-      @if (!routeApplied() && allocatedCount() > 0) {
+      @if (!routeApplied() && routeCount() > 0 && allocatedCount() > 0) {
         <div class="atlas-drift">
           Your tree has {{ allocatedCount() }} points; the route above is
           {{ routeCount() }}. Apply it to catch up.
