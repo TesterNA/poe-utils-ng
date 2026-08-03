@@ -1,7 +1,7 @@
 # PoE Tools (Angular)
 
 Angular rewrite of the vanilla-JS [poe-utils](https://github.com/TesterNA/poe-utils) site, plus a
-new **Atlas Selector** tool.
+new **Atlas Selector** and **Kingsmarch Shipment Planner**.
 
 ## Running
 
@@ -34,6 +34,34 @@ npm run build
   demand by `chromatic-solver.ts` rather than from `index.html`, because it self-invokes a `main()`
   that walks the original page's DOM. The loader hands it a throwaway hidden host with the two ids
   it dereferences, so it finishes silently instead of throwing on every page load.
+
+## Kingsmarch Shipment Planner
+
+You enter what is in the warehouse and the shipment value you are aiming for; the tool works out
+which units to load. Every resource takes a spending priority (*spend first* → *don't ship*), an
+optional Favoured Resource quota (+20% … +100%, which multiplies its value per unit), and the
+shipment can be topped up with Thaumaturgic Dust. State persists in `localStorage` under
+`poe_kingsmarch_state`.
+
+Reaching a target costs exactly that much value however it is split, so there is no "cheaper" mix —
+the priorities only decide *which* goods pay for it. `shipment-solver.ts` therefore minimises
+`Σ value × weight` subject to hitting the target exactly, which is a min-cost bounded knapsack where
+the item weight *is* the shipment value.
+
+Targets run to 50,000,000, so a DP over the whole target is out. It is solved in two passes:
+
+1. **Bulk** — spend whole resources in priority order until only a 40,000 window is left. With a
+   linear cost that prefix is exactly what the LP relaxation would do, so nothing is given away by
+   fixing it. Each resource holds back 2,000 value for the second pass; without that reserve the
+   bulk pass drains every cheap resource and hands the tail a set whose values share a factor (ship
+   out all the ore and what remains is 90/12/15/18/21/24 — all multiples of three), and two targets
+   in three become unreachable.
+2. **Exact** — min-cost bounded knapsack over what is left. Each resource is done in one O(span)
+   sweep with a monotone deque rather than by binary-splitting its stock: walking one residue class
+   mod `value`, taking `t` units means reaching back `t` places, so the state is a sliding minimum.
+
+Quotas are whole tenths, so the moment one is set the whole calculation moves to tenths of a point
+to stay on integers.
 
 ## Atlas Selector
 

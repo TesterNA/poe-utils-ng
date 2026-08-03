@@ -38,6 +38,11 @@ export const routes: Routes = [
     loadComponent: () => import('./tools/trade/trade').then((m) => m.Trade),
   },
   {
+    path: 'kingsmarch',
+    title: 'Kingsmarch Shipment · PoE Tools',
+    loadComponent: () => import('./tools/kingsmarch/kingsmarch').then((m) => m.Kingsmarch),
+  },
+  {
     path: 'atlas',
     title: 'Atlas Selector · PoE Tools',
     loadComponent: () => import('./tools/atlas/atlas').then((m) => m.Atlas),

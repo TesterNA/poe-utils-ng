@@ -45,6 +45,11 @@ export const TOOLS: ToolDef[] = [
     hidden: true,
   },
   {
+    id: 'kingsmarch',
+    label: 'Kingsmarch Ship',
+    icon: '<path d="M12 3v9M8 6h8M3 13l9 3 9-3"/><path d="M5 13v3a7 7 0 0 0 14 0v-3"/>',
+  },
+  {
     id: 'atlas',
     label: 'Atlas Selector',
     icon: '<circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="9"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/>',

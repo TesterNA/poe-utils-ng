@@ -1,0 +1,270 @@
+<poe-tool-page
+  heading="Kingsmarch Shipment Planner"
+  subtitle="Stock · Target Value · Spending Priorities"
+>
+  <div class="tool-intro">
+    <strong>Hitting a shipment value on the nose.</strong> Enter what is in the warehouse and the
+    value you are aiming for, and the planner works out which units to load. The target fixes how
+    much value leaves the docks either way — so the <em>priorities</em> decide only which goods pay
+    for it. Mark the stock you are sitting on as <em>spend first</em> and the stock you are hoarding
+    as <em>spend last</em> or <em>don't ship</em>.
+  </div>
+
+  <div class="ks-stack">
+    <poe-card [maxWidth]="'980px'">
+      <div class="section-label">Shipment Target</div>
+
+      <div class="fields-grid-2">
+        <div class="poe-field">
+          <div class="poe-field-label">Target shipment value</div>
+          <input
+            type="number"
+            min="0"
+            [max]="maxShipment"
+            step="1000"
+            [ngModel]="targetInput()"
+            (ngModelChange)="targetInput.set($event)"
+          />
+        </div>
+        <div class="poe-field">
+          <div class="poe-field-label">Thaumaturgic Dust to include</div>
+          <input
+            type="number"
+            min="0"
+            step="1000"
+            [ngModel]="dustInput()"
+            (ngModelChange)="dustInput.set($event)"
+          />
+        </div>
+      </div>
+
+      <div class="mode-toggle mode-toggle-3">
+        <label class="mode-label">
+          <input
+            type="radio"
+            name="ks-mode"
+            value="nearest"
+            [ngModel]="mode()"
+            (ngModelChange)="mode.set($event)"
+          />
+          <span class="mode-tab">Nearest</span>
+        </label>
+        <label class="mode-label">
+          <input
+            type="radio"
+            name="ks-mode"
+            value="atLeast"
+            [ngModel]="mode()"
+            (ngModelChange)="mode.set($event)"
+          />
+          <span class="mode-tab">At least</span>
+        </label>
+        <label class="mode-label">
+          <input
+            type="radio"
+            name="ks-mode"
+            value="atMost"
+            [ngModel]="mode()"
+            (ngModelChange)="mode.set($event)"
+          />
+          <span class="mode-tab">At most</span>
+        </label>
+      </div>
+
+      <div class="ks-quick-row">
+        <span class="ks-quick-label">Quick target</span>
+        <button class="poe-btn poe-btn-dim" (click)="setTargetTo(minShipment)">
+          50k · minimum
+        </button>
+        <button class="poe-btn poe-btn-dim" (click)="setTargetTo(250000)">250k</button>
+        <button class="poe-btn poe-btn-dim" (click)="setTargetTo(1000000)">1M</button>
+        <button class="poe-btn poe-btn-dim" (click)="setTargetTo(3500000)">3.5M</button>
+        <button class="poe-btn poe-btn-dim" (click)="setTargetTo(4000000)">4M</button>
+        <button class="poe-btn poe-btn-dim" (click)="setTargetTo(10000000)">10M</button>
+        <button class="poe-btn poe-btn-dim" (click)="setTargetTo(25000000)">25M</button>
+        <button class="poe-btn poe-btn-yellow" (click)="fillFromStock()">Everything I have</button>
+      </div>
+
+      <div class="result-box">
+        <div class="result-label">Shipment Value</div>
+        <div [class]="resultClass()">{{ totalText() }}</div>
+        <div [class]="statusClass()">{{ statusLabel() }} · {{ deltaText() }}</div>
+      </div>
+
+      @if (belowMinimum()) {
+        <div class="ks-warning">
+          Kingsmarch refuses shipments under <strong>{{ minShipmentText }}</strong> value.
+        </div>
+      }
+      @if (aboveMaximum()) {
+        <div class="ks-warning">
+          A shipment cannot exceed <strong>{{ maxShipmentText }}</strong> value — the target has
+          been capped.
+        </div>
+      }
+      @if (status() === 'short') {
+        <div class="ks-warning">
+          Your stock is only worth <strong>{{ stockValueText() }}</strong
+          >. Everything shippable is loaded and the shipment still falls short.
+        </div>
+      }
+
+      <div class="poe-divider">
+        <div class="poe-divider-line"></div>
+        <div class="poe-diamond"></div>
+        <div class="poe-divider-line"></div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-item-label">From goods</div>
+          <div class="summary-item-value">{{ baseText() }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">From dust</div>
+          <div class="summary-item-value">{{ dustText() }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Goods needed</div>
+          <div class="summary-item-value">{{ requiredBaseText() }}</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-item-label">Stock on hand</div>
+          <div class="summary-item-value">{{ stockValueText() }}</div>
+        </div>
+      </div>
+    </poe-card>
+
+    <poe-card [maxWidth]="'980px'">
+      <div class="ks-table-head">
+        <div class="section-label" style="margin: 0">Warehouse</div>
+        <div class="ks-table-actions">
+          <button class="poe-btn poe-btn-dim" (click)="resetPriorities()">↺ Priorities</button>
+          <button class="poe-btn poe-btn-red" (click)="clearStock()">🗑 Stock</button>
+        </div>
+      </div>
+
+      <div class="ks-table-wrap">
+        <table class="ks-table">
+          <thead>
+            <tr>
+              <th>Resource</th>
+              <th class="ks-col-num">Have</th>
+              <th>Priority</th>
+              <th>Quota</th>
+              <th class="ks-col-num">Ship</th>
+              <th class="ks-col-num">Left</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (section of sections(); track section.group) {
+              <tr class="ks-group-row">
+                <td colspan="4">
+                  {{ section.label }} <span class="ks-group-note">{{ section.note }}</span>
+                </td>
+                <td colspan="2" class="ks-col-num ks-group-value">{{ section.valueText }}</td>
+              </tr>
+              @for (row of section.rows; track row.id) {
+                <tr [class.ks-row-active]="row.ship > 0">
+                  <td>
+                    <span class="ks-name">{{ row.name }}</span>
+                    <span class="ks-unit" [class.ks-unit-boost]="row.boosted">
+                      {{ row.effective }}/ea
+                    </span>
+                  </td>
+                  <td class="ks-col-num">
+                    <input
+                      type="number"
+                      class="ks-num"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      [ngModel]="row.have"
+                      (ngModelChange)="setStock(row.id, $event)"
+                    />
+                  </td>
+                  <td>
+                    <select
+                      class="ks-select"
+                      [class.ks-select-never]="row.priority === 'never'"
+                      [ngModel]="row.priority"
+                      (ngModelChange)="setPriority(row.id, $event)"
+                    >
+                      @for (option of priorityOptions; track option.value) {
+                        <option [value]="option.value">{{ option.label }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      class="ks-select ks-select-bonus"
+                      [class.ks-select-boost]="row.boosted"
+                      [ngModel]="row.bonus"
+                      (ngModelChange)="setBonus(row.id, $event)"
+                    >
+                      @for (option of bonusOptions; track option.value) {
+                        <option [ngValue]="option.value">{{ option.label }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td class="ks-col-num ks-ship">
+                    {{ row.shipText }}
+                    @if (row.ship > 0) {
+                      <span class="ks-contrib">{{ row.contributesText }}</span>
+                      <div class="ks-bar" [style.width]="row.barWidth"></div>
+                    }
+                  </td>
+                  <td class="ks-col-num ks-left">{{ row.leftText }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </poe-card>
+
+    @if (hasPlan()) {
+      <poe-card [maxWidth]="'980px'">
+        <div class="ks-table-head">
+          <div class="section-label" style="margin: 0">Loading List</div>
+          <button class="poe-btn poe-btn-green" (click)="copyManifest()">
+            {{ copied() ? '✓ Copied' : '📋 Copy' }}
+          </button>
+        </div>
+        <pre class="ks-manifest">{{ manifest() }}</pre>
+      </poe-card>
+    }
+
+    <poe-card [maxWidth]="'980px'">
+      <div class="section-label" style="margin: 0 0 10px">Notes</div>
+      <div class="chrom-notes">
+        <strong style="color: var(--text)">Why priorities and not amounts:</strong> reaching a
+        target value costs exactly that much value however you split it, so there is no cheaper mix
+        — the planner spends the value out of whatever you rank lowest, and only shuffles goods at
+        the tail end to land on the number exactly.<br />
+        <strong style="color: var(--text)">Quotas</strong> (Favoured Resources) roll between
+        <strong>+20%</strong> and <strong>+100%</strong> and multiply that resource's contribution
+        to shipment value, so a quota'd resource is worth more per unit here. Quotas carry over
+        between shipments and never expire.<br />
+        <strong style="color: var(--text)">Dust</strong> tops a shipment up 1:1 while it stays under
+        the value of the real goods, then falls off — past that point
+        <code>total = goods × (1 + √(dust / goods))</code>. Dust does not count towards quotas and
+        does not affect how many Runegrafts or Tattoos you get.<br />
+        <strong style="color: var(--text)">Shipping ores and bars</strong> returns currency, whose
+        rarity scales with the <em>number</em> of minerals sent rather than the shipment value.
+        Crops return equipment. Bars are worth roughly 4x their ore, so shipping bars costs fewer
+        units for the same value.<br />
+        <span style="color: var(--text-muted)"
+          >Shipment values from the
+          <a
+            href="https://www.poewiki.net/wiki/Kingsmarch"
+            target="_blank"
+            rel="noopener"
+            style="color: var(--text-dim)"
+            >PoE wiki</a
+          >. Minimum shipment 50,000 · maximum 50,000,000.</span
+        >
+      </div>
+    </poe-card>
+  </div>
+</poe-tool-page>
