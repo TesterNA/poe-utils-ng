@@ -1,14 +1,15 @@
 /**
  * Checks the atlas share code format against the real tree.
  *
- * The important property is exactness: whatever plan goes in must come back
+ * The important property is exactness: whatever tree goes in must come back
  * node for node, never "close enough". So this simulates a lot of plans —
  * randomly grown trees of every size, plus the awkward shapes — and compares
- * the decoded sets against the originals element by element.
+ * the decoded set against the original element by element.
  *
- * Also covers: the walk encoding is used when the plan is connected and the
- * position-list fallback when it is not, format 1 codes still read, and
- * malformed input is refused rather than silently mis-decoded.
+ * Also covers: the walk encoding is used when the tree is connected and the
+ * position-list fallback when it is not, older codes still read (dropping the
+ * planning state they carried, except when that is all they had), and malformed
+ * input is refused rather than silently mis-decoded.
  *
  * Run: node scripts/share-code.mjs [simulations]
  */
@@ -141,15 +142,7 @@ for (let run = 0; run < SIMULATIONS; run++) {
   const size = (rnd() * 160) | 0;
   const connected = rnd() < 0.85;
   const allocated = connected ? growConnected(size, rnd) : scatter(size, rnd);
-  const targets = scatter((rnd() * 35) | 0, rnd);
-  const blocked = scatter((rnd() * 6) | 0, rnd, targets);
-  const plan = {
-    treeVersion: 1,
-    targetsMode: rnd() < 0.5,
-    allocated,
-    targets,
-    blocked,
-  };
+  const plan = { treeVersion: 1, allocated };
 
   let code;
   let back;
@@ -157,7 +150,7 @@ for (let run = 0; run < SIMULATIONS; run++) {
     code = encodePlan(tree, plan);
     back = decodePlan(code, tree);
   } catch (err) {
-    fail(`run ${run} (${allocated.length} allocated)`, String(err));
+    fail(`run ${run} (${allocated.length} nodes)`, String(err));
     continue;
   }
 
@@ -166,17 +159,14 @@ for (let run = 0; run < SIMULATIONS; run++) {
     const missing = allocated.filter((id) => !got.has(id));
     const extra = back.allocated.filter((id) => !allocated.includes(id));
     fail(
-      `run ${run}: allocated differs`,
+      `run ${run}: tree differs`,
       `${allocated.length} in, ${back.allocated.length} out, missing ${missing.length}, extra ${extra.length}`,
     );
     continue;
   }
-  if (!same(back.targets, targets)) fail(`run ${run}: targets differ`);
-  if (!same(back.blocked, blocked)) fail(`run ${run}: blocked differ`);
-  if (back.targetsMode !== plan.targetsMode) fail(`run ${run}: mode differs`);
   if (back.treeVersion !== 1) fail(`run ${run}: tree version differs`);
+  if (back.legacyTargets) fail(`run ${run}: a format 3 code should carry no targets`);
 
-  // flag bit 1 says which encoding was used
   const flags = Buffer.from(code.split(':')[1], 'base64url')[1];
   if (flags & 2) walkUsed++;
   else fallbackUsed++;
@@ -187,59 +177,66 @@ for (let run = 0; run < SIMULATIONS; run++) {
 
 const avg = sizes.length ? Math.round(sizes.reduce((a, b) => a + b, 0) / sizes.length) : 0;
 console.log(
-  `${SIMULATIONS} simulated plans: ${walkUsed} encoded as a walk, ` +
+  `${SIMULATIONS} simulated trees: ${walkUsed} encoded as a walk, ` +
     `${fallbackUsed} fell back to positions`,
 );
 console.log(`code length: avg ${avg}, worst ${worstChars} chars`);
 
 // --- awkward shapes ----------------------------------------------------------
 const edgeCases = [
-  { label: 'empty plan', allocated: [], targets: [], blocked: [] },
-  { label: 'single node next to the centre', allocated: growConnected(1, rng(7)), targets: [], blocked: [] },
-  { label: 'every allocatable node', allocated: allocatableIds, targets: [], blocked: [] },
-  { label: 'targets only', allocated: [], targets: scatter(30, rng(11)), blocked: [] },
-  { label: 'blocked only', allocated: [], targets: [], blocked: scatter(5, rng(13)) },
-  {
-    label: 'disconnected islands',
-    allocated: scatter(25, rng(17)),
-    targets: [],
-    blocked: [],
-  },
+  { label: 'empty tree', allocated: [] },
+  { label: 'single node next to the centre', allocated: growConnected(1, rng(7)) },
+  { label: 'every allocatable node', allocated: allocatableIds },
+  { label: 'disconnected islands', allocated: scatter(25, rng(17)) },
+  { label: 'a long thin branch', allocated: growConnected(40, rng(29)) },
 ];
 for (const c of edgeCases) {
-  const plan = { treeVersion: 1, targetsMode: false, ...c };
+  const plan = { treeVersion: 1, ...c };
   try {
     const code = encodePlan(tree, plan);
     const back = decodePlan(code, tree);
-    const ok =
-      same(back.allocated, plan.allocated) &&
-      same(back.targets, plan.targets) &&
-      same(back.blocked, plan.blocked);
-    if (!ok) fail(c.label, `${plan.allocated.length} in, ${back.allocated.length} out`);
-    else console.log(`✓ ${c.label} — ${code.length} chars`);
+    if (!same(back.allocated, plan.allocated)) {
+      fail(c.label, `${plan.allocated.length} in, ${back.allocated.length} out`);
+    } else {
+      console.log(`\u2713 ${c.label} — ${code.length} chars`);
+    }
   } catch (err) {
     fail(c.label, String(err));
   }
 }
 
-// --- format 1 still readable -------------------------------------------------
+// --- older formats ------------------------------------------------------------
 {
-  // hand-built format 1 payload: version 1, no flags, three position sections
-  const positions = [5, 9, 40].map((p) => p);
-  const bytes = [1, 0, positions.length, 5, 4, 31, 0, 0];
+  // format 1: version, no flags, then allocated / targets / blocked positions
+  const allocatedPositions = [5, 9, 40];
+  const targetPositions = [100, 111];
+  const bytes = [1, 0, 3, 5, 4, 31, 2, 100, 11, 0];
   const legacy = 'AT1:' + Buffer.from(bytes).toString('base64url');
   try {
     const back = decodePlan(legacy, tree);
-    const expected = positions.map((p) => nodes[shareOrder[p]].id);
+    const expected = allocatedPositions.map((p) => nodes[shareOrder[p]].id);
     if (!same(back.allocated, expected)) fail('format 1 code', 'wrong nodes');
-    else console.log('✓ format 1 code still decodes');
+    else if (back.legacyTargets) fail('format 1 code', 'targets should be dropped when a tree exists');
+    else console.log('\u2713 format 1 code decodes, its targets dropped');
   } catch (err) {
     fail('format 1 code', String(err));
+  }
+
+  // a format 1 code that held nothing but targets still opens as targets
+  const targetsOnly = 'AT1:' + Buffer.from([1, 0, 0, 2, 100, 11, 0]).toString('base64url');
+  try {
+    const back = decodePlan(targetsOnly, tree);
+    const expected = targetPositions.map((p) => nodes[shareOrder[p]].id);
+    if (back.allocated.length !== 0) fail('targets-only legacy code', 'should have no tree');
+    else if (!same(back.legacyTargets ?? [], expected)) fail('targets-only legacy code', 'wrong targets');
+    else console.log('\u2713 targets-only legacy code still opens as targets');
+  } catch (err) {
+    fail('targets-only legacy code', String(err));
   }
 }
 
 // --- refuses rubbish ---------------------------------------------------------
-const bad = ['', 'hello', 'AT2:', 'AT9:AQAAAAA', 'AT2:!!!!', 'AT1:AQ', 'AT2:AgI'];
+const bad = ['', 'hello', 'AT3:', 'AT9:AQAAAAA', 'AT3:!!!!', 'AT1:AQ', 'AT3:AgI'];
 for (const input of bad) {
   let threw = false;
   try {
@@ -254,10 +251,7 @@ console.log(`✓ refused ${bad.length} malformed inputs`);
 // --- version is carried, not assumed -----------------------------------------
 const v7 = encodePlan(tree, {
   treeVersion: 7,
-  targetsMode: false,
   allocated: growConnected(10, rng(23)),
-  targets: [],
-  blocked: [],
 });
 if (peekPlan(v7).treeVersion !== 7) fail('tree version not carried');
 else console.log('✓ tree version travels with the code');

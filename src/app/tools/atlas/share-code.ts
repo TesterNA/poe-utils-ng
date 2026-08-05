@@ -1,47 +1,54 @@
 /**
  * Share codes for an atlas plan.
  *
+ * A code carries the finished tree and nothing else. Targets and blocked nodes
+ * are working state for planning your own tree; whoever opens your link wants
+ * the result, so they get it as an allocated tree in path mode. If you share
+ * while still planning, the route on screen is what travels.
+ *
  * Shape: `AT<formatVersion>:<base64url>`. The prefix makes the string
  * recognisable and lets the reader reject a format it does not understand
  * before touching the bytes; the tree version lives in the payload, so a code
  * always says which dataset it was built against and can never be silently
  * applied to a different one.
  *
- * Payload:
- *   u8      tree version
- *   u8      flags -- bit 0: made in targets mode, bit 1: allocated is a walk
- *   section allocated
- *   section targets
- *   section blocked
+ * Payload (format 3):
+ *   u8   tree version
+ *   u8   flags -- bit 1: the tree is stored as a walk
+ *   tree
  *
- * Targets and blocked nodes are arbitrary subsets, stored as a varint count
- * followed by gaps between ascending node positions (a node place in the
- * tree shareOrder, fixed for a given tree version).
+ * The allocated set is never an arbitrary subset: it is always a connected
+ * subtree hanging off the Atlas centre. So instead of a position per node it is
+ * stored as one bit per decision along a fixed walk of the real graph -- "is
+ * this node in the plan?" -- which the decoder replays. On a real 132 node plan
+ * that is 46 characters against 178 for a position list, and it beats deflating
+ * the position list without needing a compressor. A set that somehow is not
+ * connected falls back to a position list (varint count, then gaps between
+ * ascending positions in `shareOrder`), and the flag says which was used.
  *
- * The allocated set is not arbitrary: it is always a connected subtree hanging
- * off the Atlas centre. So instead of a position per node it is stored as one
- * bit per decision along a fixed walk of the real graph -- "is this node in the
- * plan?" -- which the decoder replays. Measured on a real 132 node plan that is
- * 98 characters against 231 for a position list, and it beats deflating the
- * position list (179) without needing a compressor. A set that somehow is not
- * connected falls back to the position list, and the flag says which was used.
- *
- * Format 1 codes are still readable; they are the same thing with the allocated
- * set always as a position list.
+ * Formats 1 and 2 also carried targets and blocked nodes. They still decode, and
+ * a code that only ever held targets still opens as targets so old links are not
+ * dead ends.
  */
 import type { Tree } from './tree-types';
 
-export const SHARE_FORMAT_VERSION = 2;
-const READABLE_FORMATS = new Set([1, 2]);
+export const SHARE_FORMAT_VERSION = 3;
+const READABLE_FORMATS = new Set([1, 2, 3]);
 const PREFIX = 'AT';
 
 export interface AtlasPlan {
   treeVersion: number;
-  targetsMode: boolean;
   /** node ids, not positions — callers deal in the tree's own ids */
   allocated: string[];
-  targets: string[];
-  blocked: string[];
+  /** only ever set by a format 1 or 2 code that was shared mid-planning */
+  legacyTargets?: string[];
+  legacyBlocked?: string[];
+}
+
+export interface PlanToShare {
+  treeVersion: number;
+  /** the finished tree: what you allocated, or the route you are looking at */
+  allocated: string[];
 }
 
 export class ShareCodeError extends Error {}
@@ -184,16 +191,7 @@ function readSection(bytes: Uint8Array, cursor: { at: number }, limit: number): 
 
 // --- api ---------------------------------------------------------------------
 
-export function encodePlan(tree: Tree, plan: AtlasPlan): string {
-  const positionOf = (id: string): number | null => {
-    const node = tree.byId.get(id);
-    if (!node) return null;
-    const position = tree.shareIndex[node.idx];
-    return position >= 0 ? position : null;
-  };
-  const positions = (ids: string[]) =>
-    ids.map(positionOf).filter((p): p is number => p !== null);
-
+export function encodePlan(tree: Tree, plan: PlanToShare): string {
   const allocatedNodes = new Set<number>();
   for (const id of plan.allocated) {
     const node = tree.byId.get(id);
@@ -201,12 +199,17 @@ export function encodePlan(tree: Tree, plan: AtlasPlan): string {
   }
   const walkable = isConnectedToCentre(tree, allocatedNodes);
 
-  const flags = (plan.targetsMode ? 1 : 0) | (walkable ? 2 : 0);
-  const out: number[] = [plan.treeVersion & 0xff, flags];
-  if (walkable) writeWalk(out, tree, allocatedNodes);
-  else writeSection(out, positions(plan.allocated));
-  writeSection(out, positions(plan.targets));
-  writeSection(out, positions(plan.blocked));
+  const out: number[] = [plan.treeVersion & 0xff, walkable ? 2 : 0];
+  if (walkable) {
+    writeWalk(out, tree, allocatedNodes);
+  } else {
+    const positions: number[] = [];
+    for (const nodeIdx of allocatedNodes) {
+      const position = tree.shareIndex[nodeIdx];
+      if (position >= 0) positions.push(position);
+    }
+    writeSection(out, positions);
+  }
   return `${PREFIX}${SHARE_FORMAT_VERSION}:${toBase64Url(Uint8Array.from(out))}`;
 }
 
@@ -242,7 +245,7 @@ export function peekPlan(code: string): { formatVersion: number; treeVersion: nu
 }
 
 export function decodePlan(code: string, tree: Tree): AtlasPlan {
-  const { treeVersion } = peekPlan(code);
+  const { formatVersion, treeVersion } = peekPlan(code);
   const bytes = fromBase64Url(code.trim().split(':')[1]);
   const cursor = { at: 2 };
   const flags = bytes[1];
@@ -254,11 +257,17 @@ export function decodePlan(code: string, tree: Tree): AtlasPlan {
       ? readWalk(bytes, cursor, tree).map((node) => tree.nodes[node].id)
       : ids(readSection(bytes, cursor, limit));
 
-  return {
-    treeVersion,
-    targetsMode: (flags & 1) !== 0,
-    allocated,
-    targets: ids(readSection(bytes, cursor, limit)),
-    blocked: ids(readSection(bytes, cursor, limit)),
-  };
+  const plan: AtlasPlan = { treeVersion, allocated };
+  if (formatVersion < 3) {
+    // Older codes carried the planning state too. It is dropped, except when the
+    // code holds nothing else — then it was shared mid-planning and the targets
+    // are all there is, so open it that way rather than showing an empty tree.
+    const targets = ids(readSection(bytes, cursor, limit));
+    const blocked = ids(readSection(bytes, cursor, limit));
+    if (allocated.length === 0 && targets.length > 0) {
+      plan.legacyTargets = targets;
+      plan.legacyBlocked = blocked;
+    }
+  }
+  return plan;
 }

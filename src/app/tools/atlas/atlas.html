@@ -157,6 +157,10 @@
         <span class="atlas-version-static">tree {{ treeVersions[0].label }}</span>
       }
     </div>
+    <p class="atlas-hint atlas-share-hint">
+      Shares the finished tree. Targets and blocked nodes stay with you — whoever opens the link
+      gets the route as an allocated tree.
+    </p>
     <input class="atlas-search atlas-code" type="text" readonly [value]="shareCode()" />
     <div class="atlas-btn-row">
       <button class="poe-btn poe-btn-dim" [disabled]="!shareCode()" (click)="copyCode()">

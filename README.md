@@ -99,32 +99,37 @@ stripped once applied.
 
 ### Sharing a plan
 
-"Copy code" produces something like `AT2:AQKKApndluC4YRIx…`; "Copy link" wraps it in a `?c=` URL,
+"Copy code" produces something like `AT3:AQKKApndluC4YRIx…`; "Copy link" wraps it in a `?c=` URL,
 which applies the plan and then strips the parameter so a later refresh keeps your edits instead of
-re-importing the original. A real 132 node plan with 32 targets is 100 characters, or a 148 character
-link.
+re-importing the original.
+
+A code carries **the finished tree and nothing else**. Targets and blocked nodes are working state
+for planning your own tree, so whoever opens your link gets the result — as an allocated tree in path
+mode, not as somebody else's targets. Sharing while you are still planning sends the route currently
+on screen, which is the same thing one click earlier.
 
 There is no way to make a *short* link without a backend — a short token has to be looked up
-somewhere — so the plan travels inside the URL and the only lever is encoding it well.
+somewhere — so the plan travels inside the URL and the only lever is encoding it well. A real 132
+node plan is 55 characters, or a 103 character link.
 
 The format is `AT<formatVersion>:<base64url>`. The payload starts with the **atlas tree version** the
 plan was built against, so a code can never be silently applied to a different dataset: importing one
 for another known tree switches to it, and one for a tree this build does not have is refused by
 name.
 
-Targets and blocked nodes are arbitrary subsets, stored as gaps between positions in a numbering
-derived from the tree data alone (allocatable nodes sorted by id), so every client on that version
-agrees on it. The allocated set is *not* arbitrary — it is always a connected subtree hanging off the
-Atlas centre — so it is stored as one bit per decision along a fixed walk of the real graph, which
-the decoder replays. On that same 132 node plan: 231 characters as a position list, 179 with the list
-deflated, **98 as a walk** — and no compressor to carry. A set that somehow is not connected falls
-back to the position list, and a flag says which was used. Format 1 codes still decode.
+The tree is never an arbitrary subset — it is always connected to the Atlas centre — so it is stored
+as one bit per decision along a fixed walk of the real graph, which the decoder replays. On that 132
+node plan the tree alone is 46 characters against 178 as a list of positions, and it beats deflating
+the list without needing a compressor. A set that somehow is not connected falls back to a position
+list, and a flag says which was used.
 
-`npm run test:share` simulates 400 plans — trees grown from the centre at every size, plus empty,
-single node, the entire tree, targets-only and deliberately disconnected sets — and checks each one
-comes back node for node, that malformed codes are refused, and that the tree version travels with
-the code. `scripts/share-size.mjs [code]` re-measures the encodings if you want to revisit the
-choice.
+Formats 1 and 2 also carried targets and blocked nodes. They still decode, with that state dropped;
+a code that held nothing *but* targets still opens as targets, so old links are not dead ends.
+
+`npm run test:share` simulates 500 trees — grown from the centre at every size, plus empty, single
+node, the entire tree and deliberately disconnected sets — and checks each comes back node for node,
+that older formats read correctly, that malformed codes are refused, and that the tree version
+travels with the code. `scripts/share-size.mjs [code]` re-measures the encodings against each other.
 
 ### Adding a tree for a new league
 

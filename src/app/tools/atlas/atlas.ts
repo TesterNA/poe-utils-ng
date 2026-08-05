@@ -24,13 +24,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { createAtlasDebug } from './atlas-debug';
-import {
-  decodePlan,
-  encodePlan,
-  peekPlan,
-  ShareCodeError,
-  type AtlasPlan,
-} from './share-code';
+import { decodePlan, encodePlan, peekPlan, ShareCodeError, type AtlasPlan } from './share-code';
 import {
   DEFAULT_TREE_VERSION,
   findTreeVersion,
@@ -403,7 +397,7 @@ export class Atlas {
         : [];
     this.targets.set(chips(this.targetSet));
     this.excluded.set(chips(this.excludedSet));
-    this.shareCode.set(this.buildCode());
+    this.refreshShareCode();
     this.dirty = true;
   }
 
@@ -426,16 +420,22 @@ export class Atlas {
     }
   }
 
+  /**
+   * A code carries the finished tree only. While you are still planning, the
+   * route on screen is that tree — so sharing mid-plan gives the reader the
+   * result rather than your working state.
+   */
+  private refreshShareCode(): void {
+    this.shareCode.set(this.buildCode());
+  }
+
   private buildCode(): string {
     const tree = this.tree;
     if (!tree) return '';
-    const ids = (set: Set<number>) => [...set].map((i) => tree.nodes[i].id);
+    const shared = this.route.size > 0 ? this.route : this.allocated;
     return encodePlan(tree, {
       treeVersion: this.treeVersion(),
-      targetsMode: this.mode() === 'targets',
-      allocated: ids(this.allocated),
-      targets: ids(this.targetSet),
-      blocked: ids(this.excludedSet),
+      allocated: [...shared].map((i) => tree.nodes[i].id),
     });
   }
 
@@ -496,7 +496,11 @@ export class Atlas {
       }
       this.applyPlan(decodePlan(code, tree));
       this.importText.set('');
-      this.shareMessage.set(`Imported ${this.allocated.size} allocated nodes.`);
+      this.shareMessage.set(
+        this.targetSet.size > 0
+          ? `Imported ${this.targetSet.size} targets from an older code.`
+          : `Imported a ${this.allocated.size} point tree.`,
+      );
     } catch (err) {
       this.shareMessage.set(
         err instanceof ShareCodeError ? err.message : 'Could not read that code.',
@@ -515,13 +519,13 @@ export class Atlas {
       }
       return out;
     };
+    // A code is a finished tree, so it opens as one. The legacy fields only
+    // appear for an old code that held nothing but targets.
     this.allocated = toIndices(plan.allocated);
-    this.targetSet = toIndices(plan.targets);
-    this.excludedSet = toIndices(plan.blocked);
-    // The three states are mutually exclusive everywhere else, so enforce it
-    // here too rather than trusting the code.
+    this.targetSet = toIndices(plan.legacyTargets ?? []);
+    this.excludedSet = toIndices(plan.legacyBlocked ?? []);
     for (const idx of this.targetSet) this.excludedSet.delete(idx);
-    this.setMode(plan.targetsMode ? 'targets' : 'path');
+    this.setMode(this.targetSet.size > 0 ? 'targets' : 'path');
     this.rebuildSearchGraph();
     this.route.clear();
     this.solve();
@@ -777,6 +781,9 @@ export class Atlas {
     this.routeCount.set(cost);
     this.routeApplied.set(sameSet(this.allocated, this.route));
     this.refreshBudget();
+    // The route is what a code shares while you are still planning, so it has
+    // to be rebuilt here too — a solver result never goes through syncCounts.
+    this.refreshShareCode();
     this.dirty = true;
   }
 
