@@ -442,7 +442,9 @@ export class Atlas {
   shareLink(): string {
     const code = this.shareCode();
     if (!code) return '';
-    return `${location.origin}${location.pathname}?c=${encodeURIComponent(code)}`;
+    // base64url plus a colon is already URL-safe, and percent-encoding the colon
+    // only made the link longer for no gain.
+    return `${location.origin}${location.pathname}?c=${code}`;
   }
 
   async copyCode(): Promise<void> {

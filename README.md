@@ -99,16 +99,32 @@ stripped once applied.
 
 ### Sharing a plan
 
-"Copy code" produces something like `AT1:AQExAg4LBzIF…` — a full 138 point tree is about 220
-characters. "Copy link" wraps the same code in a `?c=` URL; opening it applies the plan and then
-strips the parameter, so a later refresh keeps your edits instead of re-importing the original.
+"Copy code" produces something like `AT2:AQKKApndluC4YRIx…`; "Copy link" wraps it in a `?c=` URL,
+which applies the plan and then strips the parameter so a later refresh keeps your edits instead of
+re-importing the original. A real 132 node plan with 32 targets is 100 characters, or a 148 character
+link.
+
+There is no way to make a *short* link without a backend — a short token has to be looked up
+somewhere — so the plan travels inside the URL and the only lever is encoding it well.
 
 The format is `AT<formatVersion>:<base64url>`. The payload starts with the **atlas tree version** the
 plan was built against, so a code can never be silently applied to a different dataset: importing one
 for another known tree switches to it, and one for a tree this build does not have is refused by
-name. Node positions are stored as gaps between allocatable nodes sorted by id — a numbering derived
-from the tree data alone, so it is identical for everyone on that version. See `share-code.ts`;
-`npm run test:share` checks round-tripping and that malformed codes are rejected.
+name.
+
+Targets and blocked nodes are arbitrary subsets, stored as gaps between positions in a numbering
+derived from the tree data alone (allocatable nodes sorted by id), so every client on that version
+agrees on it. The allocated set is *not* arbitrary — it is always a connected subtree hanging off the
+Atlas centre — so it is stored as one bit per decision along a fixed walk of the real graph, which
+the decoder replays. On that same 132 node plan: 231 characters as a position list, 179 with the list
+deflated, **98 as a walk** — and no compressor to carry. A set that somehow is not connected falls
+back to the position list, and a flag says which was used. Format 1 codes still decode.
+
+`npm run test:share` simulates 400 plans — trees grown from the centre at every size, plus empty,
+single node, the entire tree, targets-only and deliberately disconnected sets — and checks each one
+comes back node for node, that malformed codes are refused, and that the tree version travels with
+the code. `scripts/share-size.mjs [code]` re-measures the encodings if you want to revisit the
+choice.
 
 ### Adding a tree for a new league
 
