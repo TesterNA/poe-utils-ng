@@ -151,8 +151,16 @@
       }
       @if (showLevel95Note()) {
         <span style="display: block; color: var(--red)"
-          ><strong>Note:</strong> at character level 95+ PoE 1 applies a further flat XP penalty on
-          top of this (independent of area level).<br /></span
+          ><strong>Note:</strong> at character level 95+ PoE 1 applies a further XP penalty of
+          <code>1 / (1 + 0.1·(L−94))</code> on top of this, independent of area level — included
+          above ({{ lvlPenaltyText() }}).<br /></span
+        >
+      }
+      @if (showPoe2GapNote()) {
+        <span style="display: block; color: var(--red)"
+          ><strong>Note:</strong> PoE 1 applies an extra penalty {{ poe2GapSubject() }}. Nothing
+          confirms the same for PoE 2 — its wiki page documents only the exponent above — so nothing
+          extra is applied here and these numbers may be inaccurate.<br /></span
         >
       }
       <span style="color: var(--text-muted)">Formulas from the PoE &amp; PoE 2 community wikis.</span>

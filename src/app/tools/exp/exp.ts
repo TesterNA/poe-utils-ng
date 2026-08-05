@@ -17,10 +17,14 @@ import { ToolPage } from '../../shared/tool-page';
    Formulas from the PoE / PoE 2 community wikis.
      SafeZone           = floor(3 + level/16)                       (both games)
      EffectiveDifference = max(|level - effMonsterLevel| - SafeZone, 0)
-     XPMultiplier       = max( ((level+5)/(level+5 + diff^2.5))^E, 0.01 )
+     XPMultiplier       = max( ((level+5)/(level+5 + diff^2.5))^E * LevelPenalty, 0.01 )
                           E = 1.5 (PoE 1)  ·  E = 1.3 (PoE 2)
    PoE 1 only: areas with monster level > 70 are treated as a lower level for
-   XP purposes:  effML = -0.03*ml^2 + 5.17*ml - 144.9  (caps near 77.7). */
+   XP purposes:  effML = -0.03*ml^2 + 5.17*ml - 144.9  (caps near 77.7).
+   PoE 1 only: LevelPenalty = 1/(1 + 0.1*(level-94)) from level 95 (patch 2.4.0).
+   Neither of those two has any documented counterpart in PoE 2 — the PoE 2 wiki
+   page is a stub that only states the 1.3 exponent, so both are PoE 1 only and
+   the UI warns when a PoE 2 input lands where PoE 1 would apply one. */
 
 export type ExpGame = 'poe1' | 'poe2';
 
@@ -35,6 +39,8 @@ interface ExpResult {
   effML: number;
   safe: number;
   effDiff: number;
+  /** PoE 1 level 95+ multiplier, `1` whenever it does not apply. */
+  lvlPenalty: number;
   mult: number;
 }
 
@@ -79,14 +85,25 @@ function mapTier(areaLevel: number, game: ExpGame): number | null {
   return t >= 1 && t <= 16 ? t : null;
 }
 
+// PoE 1 characters at level 95+ take a further penalty that does not depend on
+// the area level at all. Deliberately excludes the separate "3.1 penalty" the
+// wiki tabulates next to it: that one is an increase to the XP *required* per
+// level, not a cut to the XP *gained*, and the wiki's own worked examples
+// (level 99 → 4.0% in tier 15, 1.9% in tier 8) leave it out too.
+function levelPenalty(level: number, game: ExpGame): number {
+  if (game !== 'poe1' || level < 95) return 1;
+  return 1 / (1 + 0.1 * (level - 94));
+}
+
 function compute(level: number, monsterLevel: number, game: ExpGame): ExpResult {
   const effML = effectiveMonsterLevel(monsterLevel, game);
   const safe = safeZone(level);
   const effDiff = Math.max(Math.abs(level - effML) - safe, 0);
   const outer = game === 'poe2' ? 1.3 : 1.5;
   const base = level + 5;
-  const raw = Math.pow(base / (base + Math.pow(effDiff, 2.5)), outer);
-  return { effML, safe, effDiff, mult: Math.max(raw, 0.01) };
+  const lvlPenalty = levelPenalty(level, game);
+  const raw = Math.pow(base / (base + Math.pow(effDiff, 2.5)), outer) * lvlPenalty;
+  return { effML, safe, effDiff, lvlPenalty, mult: Math.max(raw, 0.01) };
 }
 
 function category(mult: number): Category {
@@ -115,11 +132,14 @@ function fullXpRange(level: number, game: ExpGame): FullXpBand {
   let best = 1;
   let bestMult = -1;
   for (let z = 1; z <= 100; z++) {
-    if (Math.abs(level - effectiveMonsterLevel(z, game)) - safeZone(level) <= 0) {
+    const m = compute(level, z, game).mult;
+    // Tested on the multiplier rather than on the level difference alone, so a
+    // penalty that does not come from the area level (PoE 1 at 95+) also stops
+    // the band from claiming full XP.
+    if (m >= 0.9999) {
       if (lo === null) lo = z;
       hi = z;
     }
-    const m = compute(level, z, game).mult;
     if (m > bestMult) {
       bestMult = m;
       best = z;
@@ -223,6 +243,22 @@ export class Exp {
 
   readonly showPoe1Note = computed(() => this.game() === 'poe1');
   readonly showLevel95Note = computed(() => this.game() === 'poe1' && this.level() >= 95);
+  /** e.g. `×0.67` — the level 95+ factor already folded into the result. */
+  readonly lvlPenaltyText = computed(() => '×' + this.result().lvlPenalty.toFixed(2));
+
+  // The two PoE 1 adjustments (area levels above 70 counting for less, and the
+  // level 95+ penalty) have no documented counterpart in PoE 2 — its wiki page
+  // is a stub. Rather than silently model PoE 2 as if they do not exist, say so
+  // whenever an input lands where PoE 1 would have applied one.
+  readonly showPoe2GapNote = computed(
+    () => this.game() === 'poe2' && (this.level() >= 95 || this.zone() > 70),
+  );
+  readonly poe2GapSubject = computed(() => {
+    const highLevel = this.level() >= 95;
+    const highZone = this.zone() > 70;
+    if (highLevel && highZone) return 'at character level 95+ and in areas above level 70';
+    return highLevel ? 'at character level 95+' : 'in areas above level 70';
+  });
 
   constructor() {
     // The old script re-ran `calculate()` on a `tool:shown` CustomEvent because
