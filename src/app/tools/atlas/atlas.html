@@ -140,6 +140,50 @@
       </ul>
     }
 
+    <div class="atlas-list-head">
+      <div class="section-label">Share</div>
+      @if (treeVersions.length > 1) {
+        <select
+          class="atlas-version"
+          title="Atlas tree version"
+          [value]="treeVersion()"
+          (change)="onTreeVersionChange($event)"
+        >
+          @for (version of treeVersions; track version.id) {
+            <option [value]="version.id">{{ version.label }}</option>
+          }
+        </select>
+      } @else {
+        <span class="atlas-version-static">tree {{ treeVersions[0].label }}</span>
+      }
+    </div>
+    <input class="atlas-search atlas-code" type="text" readonly [value]="shareCode()" />
+    <div class="atlas-btn-row">
+      <button class="poe-btn poe-btn-dim" [disabled]="!shareCode()" (click)="copyCode()">
+        Copy code
+      </button>
+      <button class="poe-btn poe-btn-dim" [disabled]="!shareCode()" (click)="copyLink()">
+        Copy link
+      </button>
+    </div>
+    <div class="atlas-btn-row">
+      <input
+        class="atlas-search"
+        type="text"
+        placeholder="Paste a code to import..."
+        autocomplete="off"
+        [value]="importText()"
+        (input)="onImportInput($event)"
+        (keydown.enter)="importCode()"
+      />
+      <button class="poe-btn poe-btn-blue" [disabled]="!importText()" (click)="importCode()">
+        Import
+      </button>
+    </div>
+    @if (shareMessage()) {
+      <div class="atlas-drift">{{ shareMessage() }}</div>
+    }
+
     <div class="atlas-panel-foot">
       @if (notice()) {
         <div class="atlas-notice">{{ notice() }}</div>

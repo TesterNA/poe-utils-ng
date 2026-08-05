@@ -1,4 +1,5 @@
 import type { Edge, GroupInfo, NodeKind, RawTree, Tree, TreeNode } from './tree-types';
+import { DEFAULT_TREE_VERSION, findTreeVersion } from './tree-versions';
 
 /**
  * GGG's tree layout does not space nodes evenly on the 16- and 40-slot orbits;
@@ -176,6 +177,18 @@ export function buildTree(raw: RawTree): Tree {
     maxY = Math.max(maxY, n.y + 200);
   }
 
+  // Positions for share codes: allocatable nodes in numeric id order. Sorting
+  // by id rather than by JSON key order keeps it stable no matter how the file
+  // is regenerated or re-serialised.
+  const shareOrder = nodes
+    .filter((n) => n.allocatable)
+    .sort((a, b) => Number(a.id) - Number(b.id))
+    .map((n) => n.idx);
+  const shareIndex = new Int32Array(nodes.length).fill(-1);
+  shareOrder.forEach((nodeIdx, position) => {
+    shareIndex[nodeIdx] = position;
+  });
+
   return {
     raw,
     nodes,
@@ -184,16 +197,27 @@ export function buildTree(raw: RawTree): Tree {
     offsets,
     adjacency,
     rootIdx: indexOf.get('root') ?? 0,
+    shareOrder,
+    shareIndex,
     groups,
     bounds: { minX, minY, maxX, maxY },
     totalPoints: raw.points?.totalPoints ?? 138,
   };
 }
 
-export const ATLAS_ASSET_BASE = 'assets/atlas/';
+const ATLAS_ASSET_ROOT = 'assets/atlas/';
 
-export async function loadTree(): Promise<Tree> {
-  const res = await fetch(`${ATLAS_ASSET_BASE}tree.json`);
-  if (!res.ok) throw new Error(`Could not load the atlas tree (${res.status})`);
+/** Folder holding a version's tree data and the sprite sheets that go with it. */
+export function atlasAssetBase(versionId: number = DEFAULT_TREE_VERSION): string {
+  const version = findTreeVersion(versionId);
+  if (!version) throw new Error(`Unknown atlas tree version ${versionId}`);
+  return `${ATLAS_ASSET_ROOT}${version.dir}/`;
+}
+
+export async function loadTree(versionId: number = DEFAULT_TREE_VERSION): Promise<Tree> {
+  const version = findTreeVersion(versionId);
+  if (!version) throw new Error(`Unknown atlas tree version ${versionId}`);
+  const res = await fetch(`${atlasAssetBase(versionId)}tree.json`);
+  if (!res.ok) throw new Error(`Could not load atlas tree ${version.label} (${res.status})`);
   return buildTree((await res.json()) as RawTree);
 }

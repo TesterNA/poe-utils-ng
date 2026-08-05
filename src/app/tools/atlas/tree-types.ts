@@ -111,6 +111,14 @@ export interface Tree {
   offsets: Int32Array;
   adjacency: Int32Array;
   rootIdx: number;
+  /**
+   * Allocatable nodes sorted by numeric id — the positional numbering share
+   * codes use. Derived from the tree data alone, so it is identical for every
+   * client on the same tree version.
+   */
+  shareOrder: number[];
+  /** inverse of shareOrder: node index -> position, -1 when not shareable */
+  shareIndex: Int32Array;
   groups: GroupInfo[];
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
   totalPoints: number;

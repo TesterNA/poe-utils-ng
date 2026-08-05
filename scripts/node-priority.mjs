@@ -31,7 +31,7 @@ await build({
 });
 const { solveSteiner } = await import(pathToFileURL(path.join(tmp, 'steiner.mjs')).href);
 
-const raw = JSON.parse(await readFile(path.join(root, 'public/assets/atlas/tree.json'), 'utf8'));
+const raw = JSON.parse(await readFile(path.join(root, 'public/assets/atlas/3.29/tree.json'), 'utf8'));
 
 const ids = Object.keys(raw.nodes);
 const index = new Map(ids.map((id, i) => [id, i]));

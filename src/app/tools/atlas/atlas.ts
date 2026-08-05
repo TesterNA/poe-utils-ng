@@ -22,11 +22,25 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { createAtlasDebug } from './atlas-debug';
+import {
+  decodePlan,
+  encodePlan,
+  peekPlan,
+  ShareCodeError,
+  type AtlasPlan,
+} from './share-code';
+import {
+  DEFAULT_TREE_VERSION,
+  findTreeVersion,
+  TREE_VERSIONS,
+  type AtlasTreeVersion,
+} from './tree-versions';
 import { bfs, connectedWithin, walkBack, withoutBlocked, type Graph } from './graph';
 import { Renderer, type RenderState } from './renderer';
 import { SpriteAtlas } from './sprites';
-import { ATLAS_ASSET_BASE, loadTree } from './tree-loader';
+import { atlasAssetBase, loadTree } from './tree-loader';
 import type { SolverResponse } from './solver.worker';
 import type { Tree, TreeNode } from './tree-types';
 
@@ -71,6 +85,7 @@ const STORAGE_KEY = 'poe_atlas_state';
 
 interface StoredState {
   mode: Mode;
+  treeVersion?: number;
   allocated: string[];
   targets: string[];
   excluded: string[];
@@ -84,6 +99,8 @@ export class Atlas {
   private readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly destroyRef = inject(DestroyRef);
   private readonly zone = inject(NgZone);
+  private readonly router = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
 
   readonly mode = signal<Mode>('path');
   readonly allocatedCount = signal(0);
@@ -108,6 +125,12 @@ export class Atlas {
   readonly query = signal('');
   readonly searchHits = signal<SearchHit[]>([]);
   readonly tooltip = signal<TooltipView | null>(null);
+
+  readonly treeVersions: readonly AtlasTreeVersion[] = TREE_VERSIONS;
+  readonly treeVersion = signal(DEFAULT_TREE_VERSION);
+  readonly shareCode = signal('');
+  readonly importText = signal('');
+  readonly shareMessage = signal('');
 
   private tree: Tree | null = null;
   private graph: Graph | null = null;
@@ -158,10 +181,25 @@ export class Atlas {
     this.destroyRef.onDestroy(() => canvas.removeEventListener('wheel', this.onWheel));
 
     try {
-      this.tree = await loadTree();
+      // A share code names the tree it was built against, so it decides which
+      // dataset to fetch — before anything is loaded.
+      const params = this.activatedRoute.snapshot.queryParamMap;
+      const inboundCode = params.get('c');
+      let version = Number(params.get('v')) || this.storedTreeVersion() || DEFAULT_TREE_VERSION;
+      if (inboundCode) {
+        try {
+          version = peekPlan(inboundCode).treeVersion;
+        } catch (err) {
+          this.shareMessage.set(err instanceof ShareCodeError ? err.message : 'bad code');
+        }
+      }
+      if (!findTreeVersion(version)) version = DEFAULT_TREE_VERSION;
+      this.treeVersion.set(version);
+
+      this.tree = await loadTree(version);
       this.loading.set('Loading sprites...');
       const sprites = new SpriteAtlas(this.tree.raw);
-      await sprites.load(ATLAS_ASSET_BASE);
+      await sprites.load(atlasAssetBase(version));
 
       this.graph = {
         n: this.tree.nodes.length,
@@ -177,7 +215,23 @@ export class Atlas {
       this.renderer.fit();
       this.exposeDebugHandle();
       this.startWorker();
-      this.restore();
+      if (inboundCode) {
+        this.importCode(inboundCode);
+      } else {
+        this.restore();
+      }
+      // Remember the version even if nothing else is touched, so a plain
+      // refresh stays on the tree you are looking at.
+      this.persist();
+      if (inboundCode || params.get('v')) {
+        // Drop the parameters: a later refresh should keep your edits rather
+        // than re-importing the original plan on top of them.
+        void this.router.navigate([], {
+          relativeTo: this.activatedRoute,
+          queryParams: {},
+          replaceUrl: true,
+        });
+      }
 
       const observer = new ResizeObserver(() => {
         this.renderer?.resize();
@@ -300,6 +354,7 @@ export class Atlas {
     const ids = (set: Set<number>) => [...set].map((i) => tree.nodes[i].id);
     const state: StoredState = {
       mode: this.mode(),
+      treeVersion: this.treeVersion(),
       allocated: ids(this.allocated),
       targets: ids(this.targetSet),
       excluded: ids(this.excludedSet),
@@ -348,12 +403,147 @@ export class Atlas {
         : [];
     this.targets.set(chips(this.targetSet));
     this.excluded.set(chips(this.excludedSet));
+    this.shareCode.set(this.buildCode());
     this.dirty = true;
   }
 
   private changed(): void {
     this.syncCounts();
     this.persist();
+  }
+
+  // ----------------------------------------------------------- import/export --
+
+  /** Reads just the stored tree version, before any tree is loaded. */
+  private storedTreeVersion(): number | null {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as Partial<StoredState>;
+      return typeof saved.treeVersion === 'number' ? saved.treeVersion : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private buildCode(): string {
+    const tree = this.tree;
+    if (!tree) return '';
+    const ids = (set: Set<number>) => [...set].map((i) => tree.nodes[i].id);
+    return encodePlan(tree, {
+      treeVersion: this.treeVersion(),
+      targetsMode: this.mode() === 'targets',
+      allocated: ids(this.allocated),
+      targets: ids(this.targetSet),
+      blocked: ids(this.excludedSet),
+    });
+  }
+
+  shareLink(): string {
+    const code = this.shareCode();
+    if (!code) return '';
+    return `${location.origin}${location.pathname}?c=${encodeURIComponent(code)}`;
+  }
+
+  async copyCode(): Promise<void> {
+    await this.copyText(this.shareCode(), 'Code copied.');
+  }
+
+  async copyLink(): Promise<void> {
+    await this.copyText(this.shareLink(), 'Link copied.');
+  }
+
+  private async copyText(text: string, done: string): Promise<void> {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      this.shareMessage.set(done);
+    } catch {
+      this.shareMessage.set('Clipboard blocked — select the text and copy it manually.');
+    }
+  }
+
+  onImportInput(event: Event): void {
+    this.importText.set((event.target as HTMLInputElement).value);
+    this.shareMessage.set('');
+  }
+
+  /**
+   * Applies a pasted code. A code for a tree we know but are not showing means
+   * reloading against that dataset — the renderer, sprites and worker are all
+   * built around one tree, so starting over is safer than swapping them out
+   * underneath.
+   */
+  importCode(raw?: string): void {
+    const code = (raw ?? this.importText()).trim();
+    if (!code) return;
+    const tree = this.tree;
+    if (!tree) return;
+    try {
+      const { treeVersion } = peekPlan(code);
+      const known = findTreeVersion(treeVersion);
+      if (!known) {
+        this.shareMessage.set(
+          `This code is for atlas tree version ${treeVersion}, which this tool does not have.`,
+        );
+        return;
+      }
+      if (treeVersion !== this.treeVersion()) {
+        this.reloadWith({ c: code });
+        return;
+      }
+      this.applyPlan(decodePlan(code, tree));
+      this.importText.set('');
+      this.shareMessage.set(`Imported ${this.allocated.size} allocated nodes.`);
+    } catch (err) {
+      this.shareMessage.set(
+        err instanceof ShareCodeError ? err.message : 'Could not read that code.',
+      );
+    }
+  }
+
+  private applyPlan(plan: AtlasPlan): void {
+    const tree = this.tree;
+    if (!tree) return;
+    const toIndices = (ids: string[]) => {
+      const out = new Set<number>();
+      for (const id of ids) {
+        const node = tree.byId.get(id);
+        if (node?.allocatable) out.add(node.idx);
+      }
+      return out;
+    };
+    this.allocated = toIndices(plan.allocated);
+    this.targetSet = toIndices(plan.targets);
+    this.excludedSet = toIndices(plan.blocked);
+    // The three states are mutually exclusive everywhere else, so enforce it
+    // here too rather than trusting the code.
+    for (const idx of this.targetSet) this.excludedSet.delete(idx);
+    this.setMode(plan.targetsMode ? 'targets' : 'path');
+    this.rebuildSearchGraph();
+    this.route.clear();
+    this.solve();
+    this.changed();
+    this.renderer?.fit();
+  }
+
+  onTreeVersionChange(event: Event): void {
+    const id = Number((event.target as HTMLSelectElement).value);
+    if (!findTreeVersion(id) || id === this.treeVersion()) return;
+    // Same reasoning as importing across versions: reload rather than rebuild.
+    this.reloadWith({ v: String(id) });
+  }
+
+  /**
+   * Full page load with the given query parameters. Deliberately not a router
+   * navigation followed by reload() — the navigation is asynchronous, so the
+   * reload fired against the old URL and the parameter was lost.
+   */
+  private reloadWith(params: Record<string, string>): void {
+    const url = new URL(location.href);
+    url.search = '';
+    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+    location.href = url.toString();
   }
 
   // ----------------------------------------------------------------- modes ---

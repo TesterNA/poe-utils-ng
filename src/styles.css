@@ -1890,3 +1890,21 @@ input[type="range"]::-moz-range-thumb {
   .ks-quick-row { justify-content: center; }
   .ks-table-head { justify-content: center; }
 }
+.atlas-code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.atlas-version,
+.atlas-version-static {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-input);
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.atlas-version { cursor: pointer; }
+.atlas-btn-row .atlas-search { flex: 1; min-width: 0; }

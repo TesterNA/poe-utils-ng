@@ -93,17 +93,38 @@ The exact pass realistically covers about 13–15 targets within a few seconds; 
 heuristic result is returned, marked "≈". Everything runs in `solver.worker.ts`, and rapid clicking
 is debounced — a stale search is abandoned by discarding the worker.
 
-State (mode, allocated nodes, targets) persists in `localStorage` under `poe_atlas_state`. The tool
-does not touch the URL, since the router owns it.
+State (mode, tree version, allocated nodes, targets, blocked nodes) persists in `localStorage` under
+`poe_atlas_state`. The URL is only used to carry an inbound share code or tree version, and both are
+stripped once applied.
 
-### Updating the tree for a new league
+### Sharing a plan
+
+"Copy code" produces something like `AT1:AQExAg4LBzIF…` — a full 138 point tree is about 220
+characters. "Copy link" wraps the same code in a `?c=` URL; opening it applies the plan and then
+strips the parameter, so a later refresh keeps your edits instead of re-importing the original.
+
+The format is `AT<formatVersion>:<base64url>`. The payload starts with the **atlas tree version** the
+plan was built against, so a code can never be silently applied to a different dataset: importing one
+for another known tree switches to it, and one for a tree this build does not have is refused by
+name. Node positions are stored as gaps between allocatable nodes sorted by id — a numbering derived
+from the tree data alone, so it is identical for everyone on that version. See `share-code.ts`;
+`npm run test:share` checks round-tripping and that malformed codes are rejected.
+
+### Adding a tree for a new league
 
 Tree data and sprite sheets come from GGG's official export,
-[grindinggear/atlastree-export](https://github.com/grindinggear/atlastree-export). To refresh:
+[grindinggear/atlastree-export](https://github.com/grindinggear/atlastree-export). Each version lives
+in its own folder because icons and sheet layouts change between leagues — the data and its art have
+to move together for an old plan to stay renderable.
 
-- copy `data.json` to `public/assets/atlas/tree.json`
-- copy these sheets (the sharpest zoom level, which is all the renderer draws) to
-  `public/assets/atlas/`: `atlas-skills-4.jpg`, `atlas-skills-disabled-4.jpg`, `atlas-frame-4.png`,
-  `atlas-mastery-4.png`, `atlas-group-background-4.png`, `atlas-background-4.jpg`, `background-4.png`
+1. create `public/assets/atlas/<league>/`, e.g. `3.30/`
+2. copy `data.json` into it as `tree.json`
+3. copy these sheets (the sharpest zoom level, which is all the renderer draws) alongside it:
+   `atlas-skills-4.jpg`, `atlas-skills-disabled-4.jpg`, `atlas-frame-4.png`, `atlas-mastery-4.png`,
+   `atlas-group-background-4.png`, `atlas-background-4.jpg`, `background-4.png`
+4. add an entry to `TREE_VERSIONS` in `tree-versions.ts` with the next free `id`
+
+The version selector appears by itself once there is more than one entry. Never renumber an existing
+`id` or repoint it at different data — old share codes resolve through it.
 
 The `line` and `masteryOverlay` sheets are intentionally skipped — nothing draws them.
