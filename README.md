@@ -131,6 +131,22 @@ node, the entire tree and deliberately disconnected sets — and checks each com
 that older formats read correctly, that malformed codes are refused, and that the tree version
 travels with the code. `scripts/share-size.mjs [code]` re-measures the encodings against each other.
 
+### Saved builds
+
+Name the tree on screen and it goes into a library in `localStorage` under
+`poe_atlas_builds`; clicking an entry loads it, and the one matching what you are looking at is
+marked, so an edit is visible. Saving under an existing name replaces it.
+
+A build is a name plus a share code — about 150 bytes — so a hundred of them is a few kilobytes
+against localStorage's ~5 MB. IndexedDB was not used: it buys large values, indexes and transactions,
+none of which apply here, and costs an asynchronous API in a component whose state is otherwise
+synchronous. It is also no more durable — both live in the same origin storage and are evicted
+together, and Safari's ITP clears both after seven days without a visit.
+
+Which is why "copy all" exists: local storage is per browser and per device, so the library needs a
+way out that does not depend on it. It produces one `name<TAB>code` line per build, and pasting that
+back into the import box merges it in — the same box takes a single code, told apart by the tab.
+
 ### Adding a tree for a new league
 
 Tree data and sprite sheets come from GGG's official export,

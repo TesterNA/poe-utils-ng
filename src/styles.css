@@ -1912,3 +1912,52 @@ input[type="range"]::-moz-range-thumb {
   margin-top: -2px;
   font-size: 11px;
 }
+
+/* Saved builds */
+.atlas-build {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 0;
+  border-left: 3px solid var(--border);
+  border-radius: 2px;
+  background: var(--bg-input);
+}
+.atlas-build.current { border-left-color: var(--accent); }
+.atlas-build-load {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 5px 8px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.atlas-build-load:hover .atlas-build-name { color: var(--accent); }
+.atlas-build-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atlas-build-load small {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.atlas-build > button:last-child {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.atlas-build > button:last-child:hover { color: var(--red); }

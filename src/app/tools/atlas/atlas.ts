@@ -26,6 +26,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { createAtlasDebug } from './atlas-debug';
 import { decodePlan, encodePlan, peekPlan, ShareCodeError, type AtlasPlan } from './share-code';
 import {
+  exportAll,
+  importAll,
+  loadBuilds,
+  storeBuilds,
+  upsertBuild,
+  type SavedBuild,
+} from './atlas-builds';
+import {
   DEFAULT_TREE_VERSION,
   findTreeVersion,
   TREE_VERSIONS,
@@ -126,6 +134,14 @@ export class Atlas {
   readonly importText = signal('');
   readonly shareMessage = signal('');
 
+  readonly builds = signal<SavedBuild[]>([]);
+  readonly buildName = signal('');
+  /** The saved build the screen currently matches, so edits are obvious. */
+  readonly currentBuildId = computed(() => {
+    const code = this.shareCode();
+    return code ? (this.builds().find((b) => b.code === code)?.id ?? null) : null;
+  });
+
   private tree: Tree | null = null;
   private graph: Graph | null = null;
   private renderer: Renderer | null = null;
@@ -208,6 +224,7 @@ export class Atlas {
       this.renderer = new Renderer(canvas, this.tree, sprites);
       this.renderer.fit();
       this.exposeDebugHandle();
+      this.builds.set(loadBuilds());
       this.startWorker();
       if (inboundCode) {
         this.importCode(inboundCode);
@@ -479,6 +496,11 @@ export class Atlas {
   importCode(raw?: string): void {
     const code = (raw ?? this.importText()).trim();
     if (!code) return;
+    // A tab means this is an exported library rather than a single code.
+    if (raw === undefined && code.includes('\t')) {
+      this.importBuilds();
+      return;
+    }
     const tree = this.tree;
     if (!tree) return;
     try {
@@ -550,6 +572,85 @@ export class Atlas {
     url.search = '';
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
     location.href = url.toString();
+  }
+
+  // --------------------------------------------------------- saved builds ----
+
+  onBuildNameInput(event: Event): void {
+    this.buildName.set((event.target as HTMLInputElement).value);
+  }
+
+  saveBuild(): void {
+    const name = this.buildName().trim();
+    const code = this.shareCode();
+    if (!name || !code) return;
+    const points = this.route.size > 0 ? this.route.size : this.allocated.size;
+    const next = upsertBuild(this.builds(), {
+      name,
+      code,
+      points,
+      treeVersion: this.treeVersion(),
+    });
+    if (!storeBuilds(next)) {
+      this.shareMessage.set('Could not save — browser storage is full or disabled.');
+      return;
+    }
+    this.builds.set(next);
+    this.buildName.set('');
+    this.shareMessage.set(`Saved "${name}".`);
+  }
+
+  loadBuild(build: SavedBuild): void {
+    this.importCode(build.code);
+  }
+
+  deleteBuild(build: SavedBuild): void {
+    const next = this.builds().filter((b) => b.id !== build.id);
+    if (!storeBuilds(next)) {
+      this.shareMessage.set('Could not update storage.');
+      return;
+    }
+    this.builds.set(next);
+  }
+
+  /**
+   * Local storage is per browser and per device and can be cleared, so the
+   * library needs a way out that does not depend on it.
+   */
+  async exportBuilds(): Promise<void> {
+    const text = exportAll(this.builds());
+    if (!text) return;
+    await this.copyText(text, `Copied ${this.builds().length} builds.`);
+  }
+
+  importBuilds(): void {
+    const text = this.importText().trim();
+    if (!text.includes('\t')) {
+      this.shareMessage.set('Paste exported build lines (name, tab, code).');
+      return;
+    }
+    const merged = importAll(text, this.builds()).map((build) => {
+      if (build.points > 0 || !this.tree) return build;
+      // Fill in the details we can work out for codes on the tree we have loaded.
+      try {
+        const { treeVersion } = peekPlan(build.code);
+        if (treeVersion !== this.treeVersion()) return { ...build, treeVersion };
+        return {
+          ...build,
+          treeVersion,
+          points: decodePlan(build.code, this.tree).allocated.length,
+        };
+      } catch {
+        return build;
+      }
+    });
+    if (!storeBuilds(merged)) {
+      this.shareMessage.set('Could not save — browser storage is full or disabled.');
+      return;
+    }
+    this.builds.set(merged);
+    this.importText.set('');
+    this.shareMessage.set(`Library now has ${merged.length} builds.`);
   }
 
   // ----------------------------------------------------------------- modes ---

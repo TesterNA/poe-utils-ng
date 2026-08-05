@@ -188,6 +188,47 @@
       <div class="atlas-drift">{{ shareMessage() }}</div>
     }
 
+    <div class="atlas-list-head">
+      <div class="section-label">Saved builds ({{ builds().length }})</div>
+      @if (builds().length) {
+        <button type="button" class="atlas-link-btn" (click)="exportBuilds()">copy all</button>
+      }
+    </div>
+    <div class="atlas-btn-row">
+      <input
+        class="atlas-search"
+        type="text"
+        placeholder="Name this build..."
+        autocomplete="off"
+        [value]="buildName()"
+        (input)="onBuildNameInput($event)"
+        (keydown.enter)="saveBuild()"
+      />
+      <button class="poe-btn poe-btn-dim" [disabled]="!buildName().trim() || !shareCode()" (click)="saveBuild()">
+        Save
+      </button>
+    </div>
+    @if (builds().length) {
+      <ul class="atlas-target-list">
+        @for (build of builds(); track build.id) {
+          <li class="atlas-build" [class.current]="build.id === currentBuildId()">
+            <button type="button" class="atlas-build-load" (click)="loadBuild(build)">
+              <span class="atlas-build-name">{{ build.name }}</span>
+              <small>
+                @if (build.points) {
+                  {{ build.points }} pts
+                }
+                @if (build.treeVersion && build.treeVersion !== treeVersion()) {
+                  · other tree
+                }
+              </small>
+            </button>
+            <button type="button" title="Delete" (click)="deleteBuild(build)">&times;</button>
+          </li>
+        }
+      </ul>
+    }
+
     <div class="atlas-panel-foot">
       @if (notice()) {
         <div class="atlas-notice">{{ notice() }}</div>
