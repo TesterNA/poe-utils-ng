@@ -13,6 +13,12 @@ const SEARCH_LIMIT = 250;
 const MAX_PRICE = 9999;
 const MAX_LEVEL = 100;
 
+/** What a cleared price field means. Emptying Max is not the same as asking
+ *  for a one-price band — the search would then hide everything but that
+ *  price, which is the opposite of what an unfinished field should do. */
+const DEFAULT_MIN = 1;
+const DEFAULT_MAX = 20;
+
 export const CURRENCIES = ['chaos', 'divine', 'exalted'] as const;
 type Currency = (typeof CURRENCIES)[number];
 
@@ -67,8 +73,8 @@ export class Minesweeper {
   readonly searchLimit = SEARCH_LIMIT;
 
   /** Raw field contents — left unclamped so typing is never fought with. */
-  readonly minInput = signal<number | null>(1);
-  readonly maxInput = signal<number | null>(20);
+  readonly minInput = signal<number | null>(DEFAULT_MIN);
+  readonly maxInput = signal<number | null>(DEFAULT_MAX);
   readonly currency = signal<Currency>('chaos');
   readonly ilvlInput = signal<number | null>(null);
   readonly areaInput = signal<number | null>(null);
@@ -79,8 +85,10 @@ export class Minesweeper {
   readonly message = signal('');
 
   /** What the price fields mean once they are in range and the right way round. */
-  readonly min = computed(() => clamp(this.minInput(), 1, MAX_PRICE));
-  readonly max = computed(() => Math.max(this.min(), clamp(this.maxInput(), 1, MAX_PRICE)));
+  readonly min = computed(() => clamp(this.minInput(), 1, MAX_PRICE, DEFAULT_MIN));
+  readonly max = computed(() =>
+    Math.max(this.min(), clamp(this.maxInput(), 1, MAX_PRICE, DEFAULT_MAX)),
+  );
 
   /**
    * One search term per line of the form. Terms are space separated and the
@@ -248,8 +256,8 @@ function readNumber(event: Event): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-function clamp(value: number | null, min: number, max: number): number {
-  if (value === null || !Number.isFinite(value)) return min;
+function clamp(value: number | null, min: number, max: number, blank = min): number {
+  if (value === null || !Number.isFinite(value)) return blank;
   return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
