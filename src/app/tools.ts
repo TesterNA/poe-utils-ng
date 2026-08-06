@@ -54,4 +54,9 @@ export const TOOLS: ToolDef[] = [
     label: 'Atlas Selector',
     icon: '<circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="12" r="9"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/>',
   },
+  {
+    id: 'minesweeper',
+    label: 'Minesweeper',
+    icon: '<circle cx="12" cy="12" r="5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>',
+  },
 ];

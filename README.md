@@ -63,6 +63,38 @@ Targets run to 50,000,000, so a DP over the whole target is out. It is solved in
 Quotas are whole tenths, so the moment one is set the whole calculation moves to tenths of a point
 to stay on integers.
 
+## Minesweeper
+
+A port of [PoeMinesweeper](https://github.com/SteffenBlake/PoeMinesweeper): a stash search that
+hides landmines. A *landmine* is an expensive item parked among cheap ones, waiting for a fast
+click. You give the price band you expect to pay and the tool writes the search to paste into the
+stash you are buying out of — only items noted that way stay lit, so anything dark is a mine.
+
+The search is a list of space-separated terms which the game ands together; quotes are what let a
+term hold spaces. On top of the price band you can pin item level, area level and map tier, filter
+on corruption (`pte` is the shortest run of letters that appears in *Corrupted* and nowhere else on
+an item, and a leading `!` inverts any term), and append your own terms verbatim. The output is
+counted against the 250 characters the search box takes.
+
+The price band is the interesting part: `1` to `20` has to become `([1-9]|1\d|20)`, because a range
+stops being a character class the moment it crosses a digit boundary. `regex-range.ts` cuts the
+range at every "…999" and "…000" inside it, turns each piece into a pattern digit by digit, and
+folds neighbouring pieces that differ only in how many digits are free into one `{n,m}`. It is a
+port of [to-regex-range](https://github.com/micromatch/to-regex-range) narrowed to non-negative
+integers with no zero padding, so it emits the same string the original tool did.
+
+Being exact matters more here than being short — a pattern that let `100` through when you asked
+for `1-20` would light up the landmine it exists to hide. `npm run test:regex` checks every range
+up to 60 and 3,000 random ones up to 9,999, in both directions and twice over: anchored, and
+embedded in the real search term, where a loose pattern could otherwise match the `1` inside `100`.
+
+Prices are whole numbers, so an item noted `1.5 divine` stays dark. That is the safe way round: the
+tool only ever fails towards calling something a mine.
+
+State persists in `localStorage` under `poe_minesweeper_state`, and "Copy link" carries the form in
+a `?s=` parameter which is stripped once applied. The payload keys are the ones the original tool
+used, so its links open here too.
+
 ## Atlas Selector
 
 Interactive Atlas passive tree with two planning modes.

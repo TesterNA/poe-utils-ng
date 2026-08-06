@@ -1,0 +1,142 @@
+<poe-tool-page
+  [pips]="[true, false, true]"
+  [heading]="'Minesweeper'"
+  [subtitle]="'Anti-Landmine Stash Search'"
+>
+  <poe-card [maxWidth]="'520px'">
+    <div class="tool-intro">
+      A <strong>landmine</strong> is an expensive item parked among cheap ones, waiting for a fast
+      click. Paste this into the search box of the stash you are buying out of: only items noted
+      the way you expect stay lit, so <em>anything dark is a mine</em>.
+    </div>
+
+    <div class="section-label">Price</div>
+    <div class="ms-grid-3">
+      <div class="poe-field">
+        <div class="poe-field-label">Min</div>
+        <input
+          type="number"
+          min="1"
+          [max]="maxPrice"
+          [value]="minInput() ?? ''"
+          (input)="onMinInput($event)"
+        />
+      </div>
+      <div class="poe-field">
+        <div class="poe-field-label">Max</div>
+        <input
+          type="number"
+          min="1"
+          [max]="maxPrice"
+          [value]="maxInput() ?? ''"
+          (input)="onMaxInput($event)"
+        />
+      </div>
+      <div class="poe-field">
+        <div class="poe-field-label">Currency</div>
+        <!-- selected per option, not [value] on the select: the options are
+             rendered by @for, so a value bound to the select alone lands before
+             they exist and an imported link would still read "chaos". -->
+        <select (change)="onCurrencyChange($event)">
+          @for (option of currencies; track option) {
+            <option [value]="option" [selected]="option === currency()">{{ option }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="section-label">Extra filters</div>
+    <div class="ms-grid-3">
+      <div class="poe-field">
+        <div class="poe-field-label">Item level</div>
+        <input
+          type="number"
+          min="1"
+          [max]="maxLevel"
+          placeholder="any"
+          [value]="ilvlInput() ?? ''"
+          (input)="onIlvlInput($event)"
+        />
+      </div>
+      <div class="poe-field">
+        <div class="poe-field-label">Area level</div>
+        <input
+          type="number"
+          min="1"
+          [max]="maxLevel"
+          placeholder="any"
+          [value]="areaInput() ?? ''"
+          (input)="onAreaInput($event)"
+        />
+      </div>
+      <div class="poe-field">
+        <div class="poe-field-label">Map tier</div>
+        <input
+          type="number"
+          min="1"
+          [max]="maxLevel"
+          placeholder="any"
+          [value]="tierInput() ?? ''"
+          (input)="onTierInput($event)"
+        />
+      </div>
+    </div>
+
+    <div class="poe-field">
+      <div class="poe-field-label">Corruption</div>
+      <div class="mode-toggle ms-corruption">
+        @for (option of corruptionOptions; track option.value) {
+          <label class="mode-label">
+            <input
+              type="radio"
+              name="ms-corruption"
+              [value]="option.value"
+              [checked]="corruption() === option.value"
+              (change)="setCorruption(option.value)"
+            />
+            <span class="mode-tab">
+              {{ option.label }}
+              <code>{{ option.term }}</code>
+            </span>
+          </label>
+        }
+      </div>
+    </div>
+
+    <div class="poe-field">
+      <div class="poe-field-label">Additional terms</div>
+      <input
+        type="text"
+        placeholder="anything else to and in, e.g. &quot;rare&quot;"
+        autocomplete="off"
+        [value]="extra()"
+        (input)="onExtraInput($event)"
+      />
+    </div>
+
+    <div class="section-label">Search string</div>
+    <textarea class="ms-output" rows="3" readonly [value]="search()"></textarea>
+    <div class="ms-meta">
+      <span class="ms-count" [class.over]="overLimit()">
+        {{ search().length }} / {{ searchLimit }} characters
+      </span>
+      @if (overLimit()) {
+        <span class="ms-count over">the game will cut this off</span>
+      }
+    </div>
+
+    <div class="ms-btn-row">
+      <button class="poe-btn poe-btn-primary ms-copy" (click)="copySearch()">Copy search</button>
+      <button class="poe-btn poe-btn-dim" (click)="copyLink()">Copy link</button>
+    </div>
+    @if (message()) {
+      <div class="ms-msg">{{ message() }}</div>
+    }
+
+    <div class="info-text">
+      Terms are anded together, so an item has to satisfy all of them to light up. Prices are whole
+      numbers — an item noted <em>1.5 divine</em> stays dark, which is the safe way round. Nothing
+      here reads the trade site; it only writes the search you type in game.
+    </div>
+  </poe-card>
+</poe-tool-page>

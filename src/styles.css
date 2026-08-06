@@ -1961,3 +1961,74 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 .atlas-build > button:last-child:hover { color: var(--red); }
+
+/* ============================================================
+   MINESWEEPER
+   ============================================================ */
+.ms-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  gap: 0 14px;
+}
+
+.ms-corruption {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 0;
+}
+.ms-corruption .mode-tab {
+  padding: 7px 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.ms-corruption code {
+  display: block;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 10px;
+  line-height: 13px;
+  /* holds its line even on the option that contributes no term, so the three
+     tabs stay the same height */
+  min-height: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-muted);
+}
+.ms-corruption input:checked + .mode-tab code { color: var(--accent-dim); }
+
+.ms-output {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  resize: vertical;
+  word-break: break-all;
+}
+
+.ms-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 6px 0 14px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ms-count.over { color: var(--red); }
+
+.ms-btn-row {
+  display: flex;
+  gap: 8px;
+}
+.ms-btn-row .poe-btn { flex: 1; justify-content: center; }
+/* .poe-btn-primary carries its own full width and bottom margin */
+.ms-btn-row .ms-copy { width: auto; margin-bottom: 0; }
+
+.ms-msg {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 640px) {
+  .ms-grid-3 { grid-template-columns: 1fr; }
+}

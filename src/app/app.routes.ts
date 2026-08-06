@@ -47,5 +47,10 @@ export const routes: Routes = [
     title: 'Atlas Selector · PoE Tools',
     loadComponent: () => import('./tools/atlas/atlas').then((m) => m.Atlas),
   },
+  {
+    path: 'minesweeper',
+    title: 'Minesweeper · PoE Tools',
+    loadComponent: () => import('./tools/minesweeper/minesweeper').then((m) => m.Minesweeper),
+  },
   { path: '**', redirectTo: 'defense' },
 ];
