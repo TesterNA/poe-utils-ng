@@ -1,0 +1,1717 @@
+{
+ "versions": [
+  "3.29"
+ ],
+ "items": [
+  {
+   "code": 1,
+   "id": "Breach_Scarab_of_the_Hive",
+   "name": "Breach Scarab of the Hive",
+   "type": "scarab",
+   "group": "Breach",
+   "limit": 1,
+   "stats": [
+    "Area contains a Breach Hive"
+   ],
+   "icon": "LesserScarabBreach.webp",
+   "removedIn": null
+  },
+  {
+   "code": 2,
+   "id": "Breach_Scarab_of_Instability",
+   "name": "Breach Scarab of Instability",
+   "type": "scarab",
+   "group": "Breach",
+   "limit": 2,
+   "stats": [
+    "Area contains 2 additional Unstable Breaches"
+   ],
+   "icon": "AltLesserScarabBreach.webp",
+   "removedIn": null
+  },
+  {
+   "code": 3,
+   "id": "Breach_Scarab_of_the_Marshal",
+   "name": "Breach Scarab of the Marshal",
+   "type": "scarab",
+   "group": "Breach",
+   "limit": 1,
+   "stats": [
+    "Unstable Breaches in Area contain a Boss",
+    "Breach Hives in Area lead to a Hive Fortress"
+   ],
+   "icon": "AltNormalScarabBreach.webp",
+   "removedIn": null
+  },
+  {
+   "code": 4,
+   "id": "Breach_Scarab_of_the_Incensed_Swarm",
+   "name": "Breach Scarab of the Incensed Swarm",
+   "type": "scarab",
+   "group": "Breach",
+   "limit": 1,
+   "stats": [
+    "Ailith's skills in Area instead enrage the Hive, increasing the Difficulty",
+    "and Reward of subsequent waves"
+   ],
+   "icon": "Tier4ScarabBreach.webp",
+   "removedIn": null
+  },
+  {
+   "code": 5,
+   "id": "Breach_Scarab_of_Resonant_Cascade",
+   "name": "Breach Scarab of Resonant Cascade",
+   "type": "scarab",
+   "group": "Breach",
+   "limit": 1,
+   "stats": [
+    "Unstable Breaches in Areas are 10% faster for each Unstable Breach already opened",
+    "Monsters from Unstable Breaches in Areas have increased Difficulty and Reward for",
+    "each Unstable Breach already opened"
+   ],
+   "icon": "AltTier4ScarabBreach.webp",
+   "removedIn": null
+  },
+  {
+   "code": 6,
+   "id": "Cartography_Scarab_of_Escalation",
+   "name": "Cartography Scarab of Escalation",
+   "type": "scarab",
+   "group": "Cartography",
+   "limit": 1,
+   "stats": [
+    "10% increased Maps found in Area for each Map Modifier affecting Area"
+   ],
+   "icon": "LesserScarabMaps.webp",
+   "removedIn": null
+  },
+  {
+   "code": 7,
+   "id": "Cartography_Scarab_of_Risk",
+   "name": "Cartography Scarab of Risk",
+   "type": "scarab",
+   "group": "Cartography",
+   "limit": 1,
+   "stats": [
+    "Area has 2 additional random Modifiers"
+   ],
+   "icon": "NormalScarabMaps.webp",
+   "removedIn": null
+  },
+  {
+   "code": 8,
+   "id": "Cartography_Scarab_of_Corruption",
+   "name": "Cartography Scarab of Corruption",
+   "type": "scarab",
+   "group": "Cartography",
+   "limit": 1,
+   "stats": [
+    "Non-Unique Maps found in Area are Corrupted with 8 Modifiers"
+   ],
+   "icon": "GreaterScarabMaps.webp",
+   "removedIn": null
+  },
+  {
+   "code": 9,
+   "id": "Cartography_Scarab_of_the_Multitude",
+   "name": "Cartography Scarab of the Multitude",
+   "type": "scarab",
+   "group": "Cartography",
+   "limit": 3,
+   "stats": [
+    "Area contains 8 to 12 additional packs of",
+    "Difficult and Rewarding Monsters which drop 300% increased Maps"
+   ],
+   "icon": "AltNormalScarabMaps.webp",
+   "removedIn": null
+  },
+  {
+   "code": 10,
+   "id": "Titanic_Scarab",
+   "name": "Titanic Scarab",
+   "type": "scarab",
+   "group": "Titanic",
+   "limit": 1,
+   "stats": [
+    "Unique Monsters have 1% increased Toughness, Damage, Rarity and Quantity of items dropped per 1% increased Pack Size of Area"
+   ],
+   "icon": "LesserScarabUnique.webp",
+   "removedIn": null
+  },
+  {
+   "code": 11,
+   "id": "Titanic_Scarab_of_Treasures",
+   "name": "Titanic Scarab of Treasures",
+   "type": "scarab",
+   "group": "Titanic",
+   "limit": 3,
+   "stats": [
+    "Unique Monsters in Area have an additional Reward",
+    "Unique Monsters in Area have 30% increased Toughness"
+   ],
+   "icon": "NormalScarabUnique.webp",
+   "removedIn": null
+  },
+  {
+   "code": 12,
+   "id": "Titanic_Scarab_of_Legend",
+   "name": "Titanic Scarab of Legend",
+   "type": "scarab",
+   "group": "Titanic",
+   "limit": 1,
+   "stats": [
+    "Unique Monsters in Area have 4 additional Monster Modifiers"
+   ],
+   "icon": "GreaterScarabUnique.webp",
+   "removedIn": null
+  },
+  {
+   "code": 13,
+   "id": "Bestiary_Scarab",
+   "name": "Bestiary Scarab",
+   "type": "scarab",
+   "group": "Bestiary",
+   "limit": 1,
+   "stats": [
+    "Area contains Einhar"
+   ],
+   "icon": "LesserScarabBeasts.webp",
+   "removedIn": null
+  },
+  {
+   "code": 14,
+   "id": "Bestiary_Scarab_of_the_Herd",
+   "name": "Bestiary Scarab of the Herd",
+   "type": "scarab",
+   "group": "Bestiary",
+   "limit": 2,
+   "stats": [
+    "Area contains 5 additional Red Beasts if it contains Einhar"
+   ],
+   "icon": "NormalScarabBeasts.webp",
+   "removedIn": null
+  },
+  {
+   "code": 15,
+   "id": "Bestiary_Scarab_of_Duplicating",
+   "name": "Bestiary Scarab of Duplicating",
+   "type": "scarab",
+   "group": "Bestiary",
+   "limit": 1,
+   "stats": [
+    "Create a copy of Beasts captured in Area"
+   ],
+   "icon": "GreaterScarabBeasts.webp",
+   "removedIn": null
+  },
+  {
+   "code": 16,
+   "id": "Influencing_Scarab_of_the_Shaper",
+   "name": "Influencing Scarab of the Shaper",
+   "type": "scarab",
+   "group": "Influencing",
+   "limit": 1,
+   "stats": [
+    "Adds Shaper Influence outcome to Area"
+   ],
+   "icon": "LesserScarabShaper.webp",
+   "removedIn": null
+  },
+  {
+   "code": 17,
+   "id": "Influencing_Scarab_of_the_Elder",
+   "name": "Influencing Scarab of the Elder",
+   "type": "scarab",
+   "group": "Influencing",
+   "limit": 1,
+   "stats": [
+    "Adds Elder Influence outcome to Area"
+   ],
+   "icon": "LesserScarabElder.webp",
+   "removedIn": null
+  },
+  {
+   "code": 18,
+   "id": "Influencing_Scarab_of_Hordes",
+   "name": "Influencing Scarab of Hordes",
+   "type": "scarab",
+   "group": "Influencing",
+   "limit": 1,
+   "stats": [
+    "Influenced Monster Packs in Area have 40% increased Pack Size"
+   ],
+   "icon": "GreaterScarabElder.webp",
+   "removedIn": null
+  },
+  {
+   "code": 19,
+   "id": "Influencing_Scarab_of_Interference",
+   "name": "Influencing Scarab of Interference",
+   "type": "scarab",
+   "group": "Influencing",
+   "limit": 1,
+   "stats": [
+    "A Map Boss is accompanied by a random Shaper Guardian, Elder Guardian, Conqueror or Synthesis Boss",
+    "Can only be used with Tier 14+ Maps"
+   ],
+   "icon": "Tier4ScarabShaper.webp",
+   "removedIn": null
+  },
+  {
+   "code": 20,
+   "id": "Sulphite_Scarab",
+   "name": "Sulphite Scarab",
+   "type": "scarab",
+   "group": "Sulphite",
+   "limit": 1,
+   "stats": [
+    "Area contains Niko"
+   ],
+   "icon": "LesserScarabSulphite.webp",
+   "removedIn": null
+  },
+  {
+   "code": 21,
+   "id": "Sulphite_Scarab_of_Fumes",
+   "name": "Sulphite Scarab of Fumes",
+   "type": "scarab",
+   "group": "Sulphite",
+   "limit": 1,
+   "stats": [
+    "Sulphite found in Map Area releases Enraging Fumes",
+    "Monsters affected by Enraging Fumes have 50% increased Item Quantity",
+    "Sulphite in your maps is guarded by Monsters from the Azurite Mine"
+   ],
+   "icon": "GreaterScarabSulphite.webp",
+   "removedIn": null
+  },
+  {
+   "code": 22,
+   "id": "Divination_Scarab_of_The_Cloister",
+   "name": "Divination Scarab of The Cloister",
+   "type": "scarab",
+   "group": "Divination",
+   "limit": 5,
+   "stats": [
+    "Area contains 8 to 12 additional packs of Doedre's Devoted",
+    "Doedre's Devoted have 1% additional chance to drop a Stacked Deck"
+   ],
+   "icon": "LesserScarabDivination.webp",
+   "removedIn": null
+  },
+  {
+   "code": 23,
+   "id": "Divination_Scarab_of_Plenty",
+   "name": "Divination Scarab of Plenty",
+   "type": "scarab",
+   "group": "Divination",
+   "limit": 5,
+   "stats": [
+    "Area contains 6 to 10 additional Packs of Divination Touched Magic Monsters that",
+    "have 1000% increased chance to drop Divination Cards"
+   ],
+   "icon": "NormalScarabDivination.webp",
+   "removedIn": null
+  },
+  {
+   "code": 24,
+   "id": "Divination_Scarab_of_Pilfering",
+   "name": "Divination Scarab of Pilfering",
+   "type": "scarab",
+   "group": "Divination",
+   "limit": 1,
+   "stats": [
+    "Divination Cards which drop in Area are stolen by a Final Map Boss",
+    "That Final Map Boss becomes more Difficult and deals",
+    "increased Damage the more Divination Cards they have stolen",
+    "That Final Map Boss duplicates all stolen Divination Cards when defeated"
+   ],
+   "icon": "GreaterScarabDivination.webp",
+   "removedIn": null
+  },
+  {
+   "code": 25,
+   "id": "Torment_Scarab",
+   "name": "Torment Scarab",
+   "type": "scarab",
+   "group": "Torment",
+   "limit": 2,
+   "stats": [
+    "Area is haunted by 4 additional Tormented Spirits",
+    "Tormented Spirits in Area have a 10% chance to",
+    "be set free when Possessed Monsters are slain",
+    "and dig up a Possessed Monster"
+   ],
+   "icon": "LesserScarabTorment.webp",
+   "removedIn": null
+  },
+  {
+   "code": 26,
+   "id": "Torment_Scarab_of_Peculiarity",
+   "name": "Torment Scarab of Peculiarity",
+   "type": "scarab",
+   "group": "Torment",
+   "limit": 1,
+   "stats": [
+    "Tormented Spirits in Area are replaced with unusual variants"
+   ],
+   "icon": "NormalScarabTorment.webp",
+   "removedIn": null
+  },
+  {
+   "code": 27,
+   "id": "Torment_Scarab_of_Possession",
+   "name": "Torment Scarab of Possession",
+   "type": "scarab",
+   "group": "Torment",
+   "limit": 3,
+   "stats": [
+    "Rare Monsters in Area have a quarter chance to be Possessed by up to 3 Tormented Spirits"
+   ],
+   "icon": "Tier4ScarabTorment.webp",
+   "removedIn": null
+  },
+  {
+   "code": 28,
+   "id": "Ambush_Scarab",
+   "name": "Ambush Scarab",
+   "type": "scarab",
+   "group": "Ambush",
+   "limit": 3,
+   "stats": [
+    "Area contains 4 additional Strongboxes"
+   ],
+   "icon": "LesserScarabStrongboxes.webp",
+   "removedIn": null
+  },
+  {
+   "code": 29,
+   "id": "Ambush_Scarab_of_Hidden_Compartments",
+   "name": "Ambush Scarab of Hidden Compartments",
+   "type": "scarab",
+   "group": "Ambush",
+   "limit": 1,
+   "stats": [
+    "15% Chance for Strongboxes in Area to be openable again"
+   ],
+   "icon": "NormalScarabStrongboxes.webp",
+   "removedIn": null
+  },
+  {
+   "code": 30,
+   "id": "Ambush_Scarab_of_Potency",
+   "name": "Ambush Scarab of Potency",
+   "type": "scarab",
+   "group": "Ambush",
+   "limit": 1,
+   "stats": [
+    "75% Increased effect of Explicit Modifiers on Strongboxes in Area"
+   ],
+   "icon": "GreaterScarabStrongboxes.webp",
+   "removedIn": null
+  },
+  {
+   "code": 31,
+   "id": "Ambush_Scarab_of_Containment",
+   "name": "Ambush Scarab of Containment",
+   "type": "scarab",
+   "group": "Ambush",
+   "limit": 1,
+   "stats": [
+    "Area contains many additional Strongboxes",
+    "Area's inhabitants are lying in ambush"
+   ],
+   "icon": "Tier4ScarabStrongboxes.webp",
+   "removedIn": null
+  },
+  {
+   "code": 32,
+   "id": "Ambush_Scarab_of_Discernment",
+   "name": "Ambush Scarab of Discernment",
+   "type": "scarab",
+   "group": "Ambush",
+   "limit": 1,
+   "stats": [
+    "Strongboxes in Area are more likely to be rarer varieties"
+   ],
+   "icon": "AltTier4ScarabStrongboxes.webp",
+   "removedIn": null
+  },
+  {
+   "code": 33,
+   "id": "Expedition_Scarab",
+   "name": "Expedition Scarab",
+   "type": "scarab",
+   "group": "Expedition",
+   "limit": 1,
+   "stats": [
+    "Area contains an Expedition Encounter"
+   ],
+   "icon": "LesserScarabExpedition.webp",
+   "removedIn": null
+  },
+  {
+   "code": 34,
+   "id": "Expedition_Scarab_of_Runefinding",
+   "name": "Expedition Scarab of Runefinding",
+   "type": "scarab",
+   "group": "Expedition",
+   "limit": 2,
+   "stats": [
+    "Expedition Encounters in Area have 100% increased",
+    "number of Runic Monster Markers"
+   ],
+   "icon": "NormalScarabExpedition.webp",
+   "removedIn": null
+  },
+  {
+   "code": 35,
+   "id": "Expedition_Scarab_of_Verisium_Powder",
+   "name": "Expedition Scarab of Verisium Powder",
+   "type": "scarab",
+   "group": "Expedition",
+   "limit": 1,
+   "stats": [
+    "Expedition Encounters in Area have 50% increased number of Explosives",
+    "80% increased Explosive Radius"
+   ],
+   "icon": "GreaterScarabExpedition.webp",
+   "removedIn": null
+  },
+  {
+   "code": 36,
+   "id": "Expedition_Scarab_of_Infusion",
+   "name": "Expedition Scarab of Infusion",
+   "type": "scarab",
+   "group": "Expedition",
+   "limit": 1,
+   "stats": [
+    "Logbooks found in Area always have 4 Implicits",
+    "Expedition Monsters gain increased Difficulty and Reward for each Remnant detonated"
+   ],
+   "icon": "AltGreaterScarabExpedition.webp",
+   "removedIn": null
+  },
+  {
+   "code": 37,
+   "id": "Expedition_Scarab_of_Archaeology",
+   "name": "Expedition Scarab of Archaeology",
+   "type": "scarab",
+   "group": "Expedition",
+   "limit": 1,
+   "stats": [
+    "Remnants in Expedition Encounters in Area have 2 additional Suffixes and Prefixes"
+   ],
+   "icon": "Tier4ScarabExpedition.webp",
+   "removedIn": null
+  },
+  {
+   "code": 38,
+   "id": "Legion_Scarab",
+   "name": "Legion Scarab",
+   "type": "scarab",
+   "group": "Legion",
+   "limit": 5,
+   "stats": [
+    "Area contains an additional Legion Encounter"
+   ],
+   "icon": "LesserScarabLegion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 39,
+   "id": "Legion_Scarab_of_Officers",
+   "name": "Legion Scarab of Officers",
+   "type": "scarab",
+   "group": "Legion",
+   "limit": 1,
+   "stats": [
+    "Legion Factions in Area have 5 additional Sergeants"
+   ],
+   "icon": "NormalScarabLegion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 40,
+   "id": "Legion_Scarab_of_Treasures",
+   "name": "Legion Scarab of Treasures",
+   "type": "scarab",
+   "group": "Legion",
+   "limit": 3,
+   "stats": [
+    "Legion Chests in Area have a 20% chance to spread their Rewards",
+    "to Legion Monsters they release from stasis when they are broken out",
+    "Legion Monsters that have gained Rewards have increased Difficulty"
+   ],
+   "icon": "AltNormalScarabLegion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 41,
+   "id": "Legion_Scarab_of_Eternal_Conflict",
+   "name": "Legion Scarab of Eternal Conflict",
+   "type": "scarab",
+   "group": "Legion",
+   "limit": 1,
+   "stats": [
+    "Legion Monsters in Area can be broken out of Stasis multiple times",
+    "Legion Monsters in Area gain increased Difficulty and Reward for each time they are broken out"
+   ],
+   "icon": "Tier4ScarabLegion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 42,
+   "id": "Abyss_Scarab",
+   "name": "Abyss Scarab",
+   "type": "scarab",
+   "group": "Abyss",
+   "limit": 5,
+   "stats": [
+    "Area contains an additional Abyss"
+   ],
+   "icon": "LesserScarabAbyss.webp",
+   "removedIn": null
+  },
+  {
+   "code": 43,
+   "id": "Abyss_Scarab_of_Multitudes",
+   "name": "Abyss Scarab of Multitudes",
+   "type": "scarab",
+   "group": "Abyss",
+   "limit": 2,
+   "stats": [
+    "Abyss Chasms in Area spawn 100% increased Monsters per fed soul"
+   ],
+   "icon": "NormalScarabAbyss.webp",
+   "removedIn": null
+  },
+  {
+   "code": 44,
+   "id": "Abyss_Scarab_of_Crystals",
+   "name": "Abyss Scarab of Crystals",
+   "type": "scarab",
+   "group": "Abyss",
+   "limit": 1,
+   "stats": [
+    "Abyss Pits in Area that do not contain a reward instead create an Abyssal Crystal"
+   ],
+   "icon": "GreaterScarabAbyss.webp",
+   "removedIn": null
+  },
+  {
+   "code": 45,
+   "id": "Abyss_Scarab_of_Descending",
+   "name": "Abyss Scarab of Descending",
+   "type": "scarab",
+   "group": "Abyss",
+   "limit": 1,
+   "stats": [
+    "Area contains an Abyssal Depths"
+   ],
+   "icon": "Tier4ScarabAbyss.webp",
+   "removedIn": null
+  },
+  {
+   "code": 46,
+   "id": "Abyss_Scarab_of_the_Consort",
+   "name": "Abyss Scarab of the Consort",
+   "type": "scarab",
+   "group": "Abyss",
+   "limit": 1,
+   "stats": [
+    "An Abyss Pit in Area will spawn an Abyssal Consort"
+   ],
+   "icon": "AltTier4ScarabAbyss.webp",
+   "removedIn": null
+  },
+  {
+   "code": 47,
+   "id": "Anarchy_Scarab",
+   "name": "Anarchy Scarab",
+   "type": "scarab",
+   "group": "Anarchy",
+   "limit": 5,
+   "stats": [
+    "Area contains 5 additional Rogue Exiles"
+   ],
+   "icon": "LesserScarabAnarchy.webp",
+   "removedIn": null
+  },
+  {
+   "code": 48,
+   "id": "Anarchy_Scarab_of_Gigantification",
+   "name": "Anarchy Scarab of Gigantification",
+   "type": "scarab",
+   "group": "Anarchy",
+   "limit": 2,
+   "stats": [
+    "Wild Rogue Exiles in Area have a 30% chance to be replaced with a Rogue Giant"
+   ],
+   "icon": "NormalScarabAnarchy.webp",
+   "removedIn": null
+  },
+  {
+   "code": 49,
+   "id": "Anarchy_Scarab_of_Partnership",
+   "name": "Anarchy Scarab of Partnership",
+   "type": "scarab",
+   "group": "Anarchy",
+   "limit": 1,
+   "stats": [
+    "Wild Rogue Exiles in Area have a 50% chance to appear in pairs"
+   ],
+   "icon": "",
+   "removedIn": null
+  },
+  {
+   "code": 50,
+   "id": "Anarchy_Scarab_of_the_Exceptional",
+   "name": "Anarchy Scarab of the Exceptional",
+   "type": "scarab",
+   "group": "Anarchy",
+   "limit": 2,
+   "stats": [
+    "Area contains an additional Exceptional Rogue Exile"
+   ],
+   "icon": "Tier4ScarabAnarchy.webp",
+   "removedIn": null
+  },
+  {
+   "code": 51,
+   "id": "Essence_Scarab",
+   "name": "Essence Scarab",
+   "type": "scarab",
+   "group": "Essence",
+   "limit": 5,
+   "stats": [
+    "Area contains 3 additional Imprisoned Monsters"
+   ],
+   "icon": "LesserScarabEssence.webp",
+   "removedIn": null
+  },
+  {
+   "code": 52,
+   "id": "Essence_Scarab_of_Ascent",
+   "name": "Essence Scarab of Ascent",
+   "type": "scarab",
+   "group": "Essence",
+   "limit": 1,
+   "stats": [
+    "Essences found in Area are a tier higher"
+   ],
+   "icon": "NormalScarabEssence.webp",
+   "removedIn": null
+  },
+  {
+   "code": 53,
+   "id": "Essence_Scarab_of_Stability",
+   "name": "Essence Scarab of Stability",
+   "type": "scarab",
+   "group": "Essence",
+   "limit": 1,
+   "stats": [
+    "Corrupting an Essence in Area can only result in",
+    "upgrading or transforming Essences"
+   ],
+   "icon": "GreaterScarabEssence.webp",
+   "removedIn": null
+  },
+  {
+   "code": 54,
+   "id": "Essence_Scarab_of_Calcification",
+   "name": "Essence Scarab of Calcification",
+   "type": "scarab",
+   "group": "Essence",
+   "limit": 1,
+   "stats": [
+    "Rare monsters that are natural inhabitants of the Area are imprisoned by Essences"
+   ],
+   "icon": "Tier4ScarabEssence.webp",
+   "removedIn": null
+  },
+  {
+   "code": 55,
+   "id": "Essence_Scarab_of_Adaptation",
+   "name": "Essence Scarab of Adaptation",
+   "type": "scarab",
+   "group": "Essence",
+   "limit": 1,
+   "stats": [
+    "Imprisoned Monsters released in Areas grant a random Essence Modifier to another Imprisoned Monster in the Area",
+    "Imprisoned Monsters in Areas have increased Difficulty and Reward for",
+    "each Essence Modifier"
+   ],
+   "icon": "AltTier4ScarabEssence.webp",
+   "removedIn": null
+  },
+  {
+   "code": 56,
+   "id": "Domination_Scarab",
+   "name": "Domination Scarab",
+   "type": "scarab",
+   "group": "Domination",
+   "limit": 4,
+   "stats": [
+    "Area contains 3 additional Shrines"
+   ],
+   "icon": "LesserScarabDomination.webp",
+   "removedIn": null
+  },
+  {
+   "code": 57,
+   "id": "Domination_Scarab_of_Apparitions",
+   "name": "Domination Scarab of Apparitions",
+   "type": "scarab",
+   "group": "Domination",
+   "limit": 1,
+   "stats": [
+    "Area contains 2 additional Apparition Shrines"
+   ],
+   "icon": "NormalScarabDomination.webp",
+   "removedIn": null
+  },
+  {
+   "code": 58,
+   "id": "Domination_Scarab_of_Evolution",
+   "name": "Domination Scarab of Evolution",
+   "type": "scarab",
+   "group": "Domination",
+   "limit": 2,
+   "stats": [
+    "Area contains an additional Evolving Shrine"
+   ],
+   "icon": "GreaterScarabDomination.webp",
+   "removedIn": null
+  },
+  {
+   "code": 59,
+   "id": "Domination_Scarab_of_Terrors",
+   "name": "Domination Scarab of Terrors",
+   "type": "scarab",
+   "group": "Domination",
+   "limit": 1,
+   "stats": [
+    "Shrines in Area are guarded by an Atlas Boss",
+    "Modifiers to the Final Map Boss also apply to these Atlas Bosses"
+   ],
+   "icon": "Tier4ScarabDomination.webp",
+   "removedIn": null
+  },
+  {
+   "code": 60,
+   "id": "Ritual_Scarab_of_Selectiveness",
+   "name": "Ritual Scarab of Selectiveness",
+   "type": "scarab",
+   "group": "Ritual",
+   "limit": 2,
+   "stats": [
+    "Rerolling Favours at Ritual Altars in Area has no cost the first 2 times",
+    "Ritual Altars in Area allow rerolling Favours 2 additional times"
+   ],
+   "icon": "LesserScarabRitual.webp",
+   "removedIn": null
+  },
+  {
+   "code": 61,
+   "id": "Ritual_Scarab_of_Wisps",
+   "name": "Ritual Scarab of Wisps",
+   "type": "scarab",
+   "group": "Ritual",
+   "limit": 1,
+   "stats": [
+    "Ritual Altars in Area spawn a Wildwood Wisp",
+    "Wildwood Wisps grant 100% increased Tribute Gained to nearby Players"
+   ],
+   "icon": "NormalScarabRitual.webp",
+   "removedIn": null
+  },
+  {
+   "code": 62,
+   "id": "Ritual_Scarab_of_Abundance",
+   "name": "Ritual Scarab of Abundance",
+   "type": "scarab",
+   "group": "Ritual",
+   "limit": 2,
+   "stats": [
+    "Rituals in Area offer 100% increased Favours"
+   ],
+   "icon": "GreaterScarabRitual.webp",
+   "removedIn": null
+  },
+  {
+   "code": 63,
+   "id": "Ritual_Scarab_of_Corpses",
+   "name": "Ritual Scarab of Corpses",
+   "type": "scarab",
+   "group": "Ritual",
+   "limit": 2,
+   "stats": [
+    "Rituals in Area contain an additional Rare Itemised Corpse Monster"
+   ],
+   "icon": "Tier4ScarabRitual.webp",
+   "removedIn": null
+  },
+  {
+   "code": 64,
+   "id": "Harvest_Scarab",
+   "name": "Harvest Scarab",
+   "type": "scarab",
+   "group": "Harvest",
+   "limit": 1,
+   "stats": [
+    "Area contains the Sacred Grove"
+   ],
+   "icon": "LesserScarabHarvest.webp",
+   "removedIn": null
+  },
+  {
+   "code": 65,
+   "id": "Harvest_Scarab_of_Doubling",
+   "name": "Harvest Scarab of Doubling",
+   "type": "scarab",
+   "group": "Harvest",
+   "limit": 1,
+   "stats": [
+    "Lifeforce dropped by Harvest Monsters in Area is duplicated",
+    "Harvest Monsters in Area have 100% more Life"
+   ],
+   "icon": "GreaterScarabHarvest.webp",
+   "removedIn": null
+  },
+  {
+   "code": 66,
+   "id": "Harvest_Scarab_of_Cornucopia",
+   "name": "Harvest Scarab of Cornucopia",
+   "type": "scarab",
+   "group": "Harvest",
+   "limit": 1,
+   "stats": [
+    "If Area contains the Sacred Grove, it will contain up to 1 additional Tier 4 seed of each type, if possible"
+   ],
+   "icon": "Tier4ScarabHarvest.webp",
+   "removedIn": null
+  },
+  {
+   "code": 67,
+   "id": "Incursion_Scarab",
+   "name": "Incursion Scarab",
+   "type": "scarab",
+   "group": "Incursion",
+   "limit": 1,
+   "stats": [
+    "Area contains Alva"
+   ],
+   "icon": "LesserScarabIncursion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 68,
+   "id": "Incursion_Scarab_of_Invasion",
+   "name": "Incursion Scarab of Invasion",
+   "type": "scarab",
+   "group": "Incursion",
+   "limit": 3,
+   "stats": [
+    "Area contains 12 to 16 additional packs of Incursion Monsters"
+   ],
+   "icon": "NormalScarabIncursion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 69,
+   "id": "Incursion_Scarab_of_Champions",
+   "name": "Incursion Scarab of Champions",
+   "type": "scarab",
+   "group": "Incursion",
+   "limit": 2,
+   "stats": [
+    "Incursions in Area have a 35% chance for all Monsters to be at least Magic",
+    "Incursions in Area have 15% increased Pack Size"
+   ],
+   "icon": "GreaterScarabIncursion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 70,
+   "id": "Incursion_Scarab_of_Timelines",
+   "name": "Incursion Scarab of Timelines",
+   "type": "scarab",
+   "group": "Incursion",
+   "limit": 1,
+   "stats": [
+    "Final Architect slain in Area will drop an Itemised Temple",
+    "Itemised Temples dropped in Area are generated based on current Temple layout, but with randomised room tiers"
+   ],
+   "icon": "Tier4ScarabIncursion.webp",
+   "removedIn": null
+  },
+  {
+   "code": 71,
+   "id": "Betrayal_Scarab",
+   "name": "Betrayal Scarab",
+   "type": "scarab",
+   "group": "Betrayal",
+   "limit": 1,
+   "stats": [
+    "Area contains Jun"
+   ],
+   "icon": "LesserScarabBetrayal.webp",
+   "removedIn": null
+  },
+  {
+   "code": 72,
+   "id": "Betrayal_Scarab_of_the_Allflame",
+   "name": "Betrayal Scarab of the Allflame",
+   "type": "scarab",
+   "group": "Betrayal",
+   "limit": 1,
+   "stats": [
+    "75% Increased number of Monster Packs Substituted by Allflame Embers in Area"
+   ],
+   "icon": "NormalScarabBetrayal.webp",
+   "removedIn": null
+  },
+  {
+   "code": 73,
+   "id": "Betrayal_Scarab_of_Reinforcements",
+   "name": "Betrayal Scarab of Reinforcements",
+   "type": "scarab",
+   "group": "Betrayal",
+   "limit": 1,
+   "stats": [
+    "Immortal Syndicate Members in Area have 50% increased chance to be accompanied by reinforcements"
+   ],
+   "icon": "GreaterScarabBetrayal.webp",
+   "removedIn": null
+  },
+  {
+   "code": 74,
+   "id": "Betrayal_Scarab_of_Unbreaking",
+   "name": "Betrayal Scarab of Unbreaking",
+   "type": "scarab",
+   "group": "Betrayal",
+   "limit": 2,
+   "stats": [
+    "Interrogated Immortal Syndicate targets in Area have a 50% chance to",
+    "not lose Rank upon completing Interrogation"
+   ],
+   "icon": "Tier4ScarabBetrayal.webp",
+   "removedIn": null
+  },
+  {
+   "code": 75,
+   "id": "Beyond_Scarab",
+   "name": "Beyond Scarab",
+   "type": "scarab",
+   "group": "Beyond",
+   "limit": 1,
+   "stats": [
+    "Slaying enemies close together in Area can attract monsters from Beyond this realm"
+   ],
+   "icon": "",
+   "removedIn": null
+  },
+  {
+   "code": 76,
+   "id": "Beyond_Scarab_of_Haemophilia",
+   "name": "Beyond Scarab of Haemophilia",
+   "type": "scarab",
+   "group": "Beyond",
+   "limit": 2,
+   "stats": [
+    "Beyond Portals in Area have 50% increased Merging Radius",
+    "Characters that Kill Beyond Rare Monsters in Area have a 30% chance to gain their Modifiers for 20 seconds"
+   ],
+   "icon": "NormalScarabBeyond.webp",
+   "removedIn": null
+  },
+  {
+   "code": 77,
+   "id": "Beyond_Scarab_of_Resurgence",
+   "name": "Beyond Scarab of Resurgence",
+   "type": "scarab",
+   "group": "Beyond",
+   "limit": 1,
+   "stats": [
+    "Beyond Bosses Spawned in Area are accompanied by Beyond Bosses of other Factions",
+    "Beyond Bosses in Area drop 20% increased Tainted Currency",
+    "Beyond Portals in Area have 30% increased chance to spawn a Unique Boss"
+   ],
+   "icon": "AltGreaterScarabBeyond.webp",
+   "removedIn": null
+  },
+  {
+   "code": 78,
+   "id": "Beyond_Scarab_of_the_Invasion",
+   "name": "Beyond Scarab of the Invasion",
+   "type": "scarab",
+   "group": "Beyond",
+   "limit": 1,
+   "stats": [
+    "Rare and Unique Monsters slain in Area create 8 to 12 additional Beyond Portals"
+   ],
+   "icon": "Tier4ScarabBeyond.webp",
+   "removedIn": null
+  },
+  {
+   "code": 79,
+   "id": "Ultimatum_Scarab",
+   "name": "Ultimatum Scarab",
+   "type": "scarab",
+   "group": "Ultimatum",
+   "limit": 1,
+   "stats": [
+    "Area contains an Ultimatum Encounter"
+   ],
+   "icon": "LesserScarabUltimatum.webp",
+   "removedIn": null
+  },
+  {
+   "code": 80,
+   "id": "Ultimatum_Scarab_of_Bribing",
+   "name": "Ultimatum Scarab of Bribing",
+   "type": "scarab",
+   "group": "Ultimatum",
+   "limit": 2,
+   "stats": [
+    "Ultimatum Monsters grant 150% increased Experience",
+    "Ultimatum Encounters grant rewards as though you completed 2 additional Rounds"
+   ],
+   "icon": "NormalScarabUltimatum.webp",
+   "removedIn": null
+  },
+  {
+   "code": 81,
+   "id": "Ultimatum_Scarab_of_Dueling",
+   "name": "Ultimatum Scarab of Dueling",
+   "type": "scarab",
+   "group": "Ultimatum",
+   "limit": 1,
+   "stats": [
+    "Ultimatum Encounters in Area will always lead to a Unique Boss if possible"
+   ],
+   "icon": "GreaterScarabUltimatum.webp",
+   "removedIn": null
+  },
+  {
+   "code": 82,
+   "id": "Ultimatum_Scarab_of_Catalysing",
+   "name": "Ultimatum Scarab of Catalysing",
+   "type": "scarab",
+   "group": "Ultimatum",
+   "limit": 1,
+   "stats": [
+    "Ultimatum Encounters in Area will only offer Catalysts",
+    "as Rewards to the Map Owner"
+   ],
+   "icon": "Tier4ScarabUltimatum.webp",
+   "removedIn": null
+  },
+  {
+   "code": 83,
+   "id": "Ultimatum_Scarab_of_Inscription",
+   "name": "Ultimatum Scarab of Inscription",
+   "type": "scarab",
+   "group": "Ultimatum",
+   "limit": 1,
+   "stats": [
+    "Ultimatum Encounter rewards in Area offering Catalysts",
+    "will offer Inscribed Ultimatums to the Map Owner instead"
+   ],
+   "icon": "AltTier4ScarabUltimatum.webp",
+   "removedIn": null
+  },
+  {
+   "code": 84,
+   "id": "Delirium_Scarab",
+   "name": "Delirium Scarab",
+   "type": "scarab",
+   "group": "Delirium",
+   "limit": 1,
+   "stats": [
+    "Area contains a Mirror of Delirium"
+   ],
+   "icon": "LesserScarabDelirium.webp",
+   "removedIn": null
+  },
+  {
+   "code": 85,
+   "id": "Delirium_Scarab_of_Mania",
+   "name": "Delirium Scarab of Mania",
+   "type": "scarab",
+   "group": "Delirium",
+   "limit": 2,
+   "stats": [
+    "Delirium Reward Meters fill 100% faster in Area",
+    "Delirium in Area increases 50% faster with distance from the mirror"
+   ],
+   "icon": "NormalScarabDelirium.webp",
+   "removedIn": null
+  },
+  {
+   "code": 86,
+   "id": "Delirium_Scarab_of_Paranoia",
+   "name": "Delirium Scarab of Paranoia",
+   "type": "scarab",
+   "group": "Delirium",
+   "limit": 5,
+   "stats": [
+    "Delirium Encounters in Area generate 2 additional Reward types"
+   ],
+   "icon": "GreaterScarabDelirium.webp",
+   "removedIn": null
+  },
+  {
+   "code": 87,
+   "id": "Delirium_Scarab_of_Neuroses",
+   "name": "Delirium Scarab of Neuroses",
+   "type": "scarab",
+   "group": "Delirium",
+   "limit": 1,
+   "stats": [
+    "Delirium Encounters in Area contain all Unique Delirium Bosses",
+    "Delirium Reward Types in Area gain +1 to count on defeating a Unique Delirium Boss",
+    "Can only be used with Tier 11+ Maps"
+   ],
+   "icon": "AltGreaterScarabDelirium.webp",
+   "removedIn": null
+  },
+  {
+   "code": 88,
+   "id": "Delirium_Scarab_of_Delusions",
+   "name": "Delirium Scarab of Delusions",
+   "type": "scarab",
+   "group": "Delirium",
+   "limit": 1,
+   "stats": [
+    "Maps found in Area have layers of Delirium"
+   ],
+   "icon": "Tier4ScarabDelirium.webp",
+   "removedIn": null
+  },
+  {
+   "code": 89,
+   "id": "Blight_Scarab",
+   "name": "Blight Scarab",
+   "type": "scarab",
+   "group": "Blight",
+   "limit": 1,
+   "stats": [
+    "Area contains a Blight Encounter"
+   ],
+   "icon": "LesserScarabBlight.webp",
+   "removedIn": null
+  },
+  {
+   "code": 90,
+   "id": "Blight_Scarab_of_the_Blightheart",
+   "name": "Blight Scarab of the Blightheart",
+   "type": "scarab",
+   "group": "Blight",
+   "limit": 1,
+   "stats": [
+    "Blight Encounters in Area have one Blighted Chest",
+    "Blight Encounters in Area spawn additional waves of Enemies",
+    "Blighted Chests in Area grow larger and more",
+    "rewarding the more Blighted Enemies are slain"
+   ],
+   "icon": "GreaterScarabBlight.webp",
+   "removedIn": null
+  },
+  {
+   "code": 91,
+   "id": "Blight_Scarab_of_Blooming",
+   "name": "Blight Scarab of Blooming",
+   "type": "scarab",
+   "group": "Blight",
+   "limit": 1,
+   "stats": [
+    "Blight Encounters in Area have up to 3 additional Unique Bosses",
+    "Unique enemies in Blight Encounters have 100% increased life",
+    "Tier 14+ Blighted Maps found in Area drop as Blight-Ravaged Maps instead"
+   ],
+   "icon": "Tier4ScarabBlight.webp",
+   "removedIn": null
+  },
+  {
+   "code": 92,
+   "id": "Blight_Scarab_of_Invigoration",
+   "name": "Blight Scarab of Invigoration",
+   "type": "scarab",
+   "group": "Blight",
+   "limit": 1,
+   "stats": [
+    "Each Empowering Tower in Areas grants Blighted Monsters in",
+    "range increased Difficulty and Reward"
+   ],
+   "icon": "AltTier4ScarabBlight.webp",
+   "removedIn": null
+  },
+  {
+   "code": 93,
+   "id": "Kalguuran_Scarab",
+   "name": "Kalguuran Scarab",
+   "type": "scarab",
+   "group": "Kalguuran",
+   "limit": 2,
+   "stats": [
+    "Area contains 2 additional Ore Deposits"
+   ],
+   "icon": "LesserScarabSettlers.webp",
+   "removedIn": null
+  },
+  {
+   "code": 94,
+   "id": "Kalguuran_Scarab_of_Guarded_Riches",
+   "name": "Kalguuran Scarab of Guarded Riches",
+   "type": "scarab",
+   "group": "Kalguuran",
+   "limit": 1,
+   "stats": [
+    "Monsters guarding Ore Deposits in Area are at least Magic"
+   ],
+   "icon": "NormalScarabSettlers.webp",
+   "removedIn": null
+  },
+  {
+   "code": 95,
+   "id": "Kalguuran_Scarab_of_Refinement",
+   "name": "Kalguuran Scarab of Refinement",
+   "type": "scarab",
+   "group": "Kalguuran",
+   "limit": 1,
+   "stats": [
+    "Ore Deposits in Area grant Smelted Bars instead of Marking Ore"
+   ],
+   "icon": "GreaterScarabSettlers.webp",
+   "removedIn": null
+  },
+  {
+   "code": 96,
+   "id": "Kalguuran_Scarab_of_Enriching",
+   "name": "Kalguuran Scarab of Enriching",
+   "type": "scarab",
+   "group": "Kalguuran",
+   "limit": 1,
+   "stats": [
+    "Monsters guarding Ore Deposits have increased Difficulty and",
+    "Reward and Ore Deposits contain 15% increased Ore",
+    "for each Ore Deposit completed in Area"
+   ],
+   "icon": "Tier4ScarabSettlers.webp",
+   "removedIn": null
+  },
+  {
+   "code": 97,
+   "id": "Trarthan_Scarab",
+   "name": "Trarthan Scarab",
+   "type": "scarab",
+   "group": "Trarthan",
+   "limit": 1,
+   "stats": [
+    "Area is inhabited by a Mercenary"
+   ],
+   "icon": "LesserScarabMercenaries.webp",
+   "removedIn": null
+  },
+  {
+   "code": 98,
+   "id": "Trarthan_Scarab_of_Infamy",
+   "name": "Trarthan Scarab of Infamy",
+   "type": "scarab",
+   "group": "Trarthan",
+   "limit": 1,
+   "stats": [
+    "Mercenaries found in Area are Infamous",
+    "Mercenaries found in Area are accompanied by two Wild Mercenaries"
+   ],
+   "icon": "NormalScarabMercenaries.webp",
+   "removedIn": null
+  },
+  {
+   "code": 99,
+   "id": "Trarthan_Scarab_of_Renown",
+   "name": "Trarthan Scarab of Renown",
+   "type": "scarab",
+   "group": "Trarthan",
+   "limit": 1,
+   "stats": [
+    "All Equipment Items on Mercenaries found in Area are Unique"
+   ],
+   "icon": "GreaterScarabMercenaries.webp",
+   "removedIn": null
+  },
+  {
+   "code": 100,
+   "id": "Trarthan_Scarab_of_Surprising_Alliances",
+   "name": "Trarthan Scarab of Surprising Alliances",
+   "type": "scarab",
+   "group": "Trarthan",
+   "limit": 1,
+   "stats": [
+    "Wild Rogue Exiles in Area have 50% chance to be accompanied by a Wild Mercenary",
+    "Wild Mercenaries have increased Difficulty for each Wild Mercenary in Area"
+   ],
+   "icon": "Tier4ScarabMercenaries.webp",
+   "removedIn": null
+  },
+  {
+   "code": 101,
+   "id": "Scarab_of_Monstrous_Lineage",
+   "name": "Scarab of Monstrous Lineage",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 2,
+   "stats": [
+    "40% increased Magic Pack Size"
+   ],
+   "icon": "LesserScarabMisc.webp",
+   "removedIn": null
+  },
+  {
+   "code": 102,
+   "id": "Scarab_of_Adversaries",
+   "name": "Scarab of Adversaries",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 2,
+   "stats": [
+    "Area contains 4 additional Packs with Mirrored Rare Monsters"
+   ],
+   "icon": "AltLesserScarabMisc.webp",
+   "removedIn": null
+  },
+  {
+   "code": 103,
+   "id": "Scarab_of_Divinity",
+   "name": "Scarab of Divinity",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 3,
+   "stats": [
+    "Up to 3 additional Rare Monsters in Area will be Pantheon-Touched",
+    "Apparitions spawned by Pantheon-Touched Monsters deal 100% increased damage"
+   ],
+   "icon": "NormalScarabMisc.webp",
+   "removedIn": null
+  },
+  {
+   "code": 104,
+   "id": "Scarab_of_Hunted_Traitors",
+   "name": "Scarab of Hunted Traitors",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 1,
+   "stats": [
+    "Area contains Hunted Traitors"
+   ],
+   "icon": "GreaterScarabMisc.webp",
+   "removedIn": null
+  },
+  {
+   "code": 105,
+   "id": "Scarab_of_Stability",
+   "name": "Scarab of Stability",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 1,
+   "stats": [
+    "Portals to Area have a 50% chance to not be consumed on use"
+   ],
+   "icon": "Tier4ScarabMisc.webp",
+   "removedIn": null
+  },
+  {
+   "code": 106,
+   "id": "Scarab_of_the_Commander",
+   "name": "Scarab of the Commander",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 1,
+   "stats": [
+    "Grants an additional Kirac Mission on Map Completion"
+   ],
+   "icon": "LesserScarabMisc1.webp",
+   "removedIn": null
+  },
+  {
+   "code": 107,
+   "id": "Scarab_of_Evolution",
+   "name": "Scarab of Evolution",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 1,
+   "stats": [
+    "10 Monster Packs in Area are upgraded to Magic"
+   ],
+   "icon": "LesserScarabMisc2.webp",
+   "removedIn": null
+  },
+  {
+   "code": 108,
+   "id": "Scarab_of_Wisps",
+   "name": "Scarab of Wisps",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 2,
+   "stats": [
+    "Monsters in Area have a chance to be Empowered by 2000 Wildwood Wisps"
+   ],
+   "icon": "GreaterScarabMisc1.webp",
+   "removedIn": null
+  },
+  {
+   "code": 109,
+   "id": "Scarab_of_the_Sinistral",
+   "name": "Scarab of the Sinistral",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 1,
+   "stats": [
+    "100% increased effect of Area Prefix Modifiers",
+    "Area Suffix Modifiers have no effect"
+   ],
+   "icon": "GreaterScarabMisc2.webp",
+   "removedIn": null
+  },
+  {
+   "code": 110,
+   "id": "Scarab_of_the_Dextral",
+   "name": "Scarab of the Dextral",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 1,
+   "stats": [
+    "100% increased effect of Area Suffix Modifiers",
+    "Area Prefix Modifiers have no effect"
+   ],
+   "icon": "AltGreaterScarabMisc.webp",
+   "removedIn": null
+  },
+  {
+   "code": 111,
+   "id": "Scarab_of_Radiant_Storms",
+   "name": "Scarab of Radiant Storms",
+   "type": "scarab",
+   "group": "Miscellaneous",
+   "limit": 1,
+   "stats": [
+    "Area contains a Resplendent Tempest"
+   ],
+   "icon": "Tier4ScarabMisc2.webp",
+   "removedIn": null
+  },
+  {
+   "code": 112,
+   "id": "Horned_Scarab_of_Bloodlines",
+   "name": "Horned Scarab of Bloodlines",
+   "type": "scarab",
+   "group": "Horned",
+   "limit": 1,
+   "stats": [
+    "Area has 150% increased Magic Monsters",
+    "Magic Monsters in area have an additional Modifier"
+   ],
+   "icon": "SuperScarab1.webp",
+   "removedIn": null
+  },
+  {
+   "code": 113,
+   "id": "Horned_Scarab_of_Nemeses",
+   "name": "Horned Scarab of Nemeses",
+   "type": "scarab",
+   "group": "Horned",
+   "limit": 2,
+   "stats": [
+    "Rare Monsters in Area have 2 additional Modifiers"
+   ],
+   "icon": "SuperScarab2.webp",
+   "removedIn": null
+  },
+  {
+   "code": 114,
+   "id": "Horned_Scarab_of_Preservation",
+   "name": "Horned Scarab of Preservation",
+   "type": "scarab",
+   "group": "Horned",
+   "limit": 1,
+   "stats": [
+    "Other Scarabs are not consumed on use"
+   ],
+   "icon": "SuperScarab3.webp",
+   "removedIn": null
+  },
+  {
+   "code": 115,
+   "id": "Horned_Scarab_of_Awakening",
+   "name": "Horned Scarab of Awakening",
+   "type": "scarab",
+   "group": "Horned",
+   "limit": 1,
+   "stats": [
+    "Tier 16+ Areas contain the Bosses from a random Maven Invitation"
+   ],
+   "icon": "SuperScarab4.webp",
+   "removedIn": null
+  },
+  {
+   "code": 116,
+   "id": "Horned_Scarab_of_Tradition",
+   "name": "Horned Scarab of Tradition",
+   "type": "scarab",
+   "group": "Horned",
+   "limit": 1,
+   "stats": [
+    "All Rare and Unique Monsters in Area have dropped items",
+    "transformed by a Reward Modifier"
+   ],
+   "icon": "SuperScarab5.webp",
+   "removedIn": null
+  },
+  {
+   "code": 117,
+   "id": "Horned_Scarab_of_Glittering",
+   "name": "Horned Scarab of Glittering",
+   "type": "scarab",
+   "group": "Horned",
+   "limit": 1,
+   "stats": [
+    "Players in Area gain increased Item Rarity for each Monster",
+    "slain, up to 400%, decaying over time"
+   ],
+   "icon": "SuperScarab6.webp",
+   "removedIn": null
+  },
+  {
+   "code": 118,
+   "id": "Horned_Scarab_of_Pandemonium",
+   "name": "Horned Scarab of Pandemonium",
+   "type": "scarab",
+   "group": "Horned",
+   "limit": 1,
+   "stats": [
+    "Monster packs in Area have a 15% chance to be replaced by a random Atlas Boss",
+    "Modifiers to the Final Map Boss also apply to these Atlas Bosses"
+   ],
+   "icon": "SuperScarab7.webp",
+   "removedIn": null
+  },
+  {
+   "code": 119,
+   "id": "Allflame_Ember_of_Flesh",
+   "name": "Allflame Ember of Flesh",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 3,
+   "stats": [
+    "Adds Monster Packs to Area",
+    "Pack has single Monster",
+    "Monster has greatly increased Life"
+   ],
+   "icon": "AllflameMeatsack.webp",
+   "removedIn": null
+  },
+  {
+   "code": 120,
+   "id": "Allflame_Ember_of_Kulemak",
+   "name": "Allflame Ember of Kulemak",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 2,
+   "stats": [
+    "Pack monsters revive after Map Boss has been slain"
+   ],
+   "icon": "AllflameBetrayal.webp",
+   "removedIn": null
+  },
+  {
+   "code": 121,
+   "id": "Allflame_Ember_of_Propagation",
+   "name": "Allflame Ember of Propagation",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 1,
+   "stats": [
+    "Adds Monster Packs to Area",
+    "Pack monsters that die when Rare spread",
+    "Modifiers to other Rare monsters in Area"
+   ],
+   "icon": "AllflameFungus.webp",
+   "removedIn": null
+  },
+  {
+   "code": 122,
+   "id": "Allflame_Ember_of_Resplendence",
+   "name": "Allflame Ember of Resplendence",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 2,
+   "stats": [
+    "Adds Monster Packs to Area",
+    "Pack monsters do not drop items",
+    "Pack Monsters grant increased Item Rarity",
+    "and Item Quantity when slain, up to",
+    "200% and 100% respectively, decaying over time"
+   ],
+   "icon": "AllflameBeetle.webp",
+   "removedIn": null
+  },
+  {
+   "code": 123,
+   "id": "Allflame_Ember_of_the_Ethereal",
+   "name": "Allflame Ember of the Ethereal",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 4,
+   "stats": [
+    "Adds Monster Packs to Area",
+    "Pack monsters cannot not drop Equipment"
+   ],
+   "icon": "AllflameCleansed.webp",
+   "removedIn": null
+  },
+  {
+   "code": 124,
+   "id": "Allflame_Ember_of_the_Gilded",
+   "name": "Allflame Ember of the Gilded",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 4,
+   "stats": [
+    "Adds Monster Packs to Area",
+    "Pack Monster Equipment Drops are converted to Gold"
+   ],
+   "icon": "AllflameGold.webp",
+   "removedIn": null
+  },
+  {
+   "code": 125,
+   "id": "Allflame_Ember_of_the_Wildwood",
+   "name": "Allflame Ember of the Wildwood",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 2,
+   "stats": [
+    "Adds Monster Packs to Area",
+    "Pack has single Sentinel"
+   ],
+   "icon": "AllflameWildwood.webp",
+   "removedIn": null
+  },
+  {
+   "code": 126,
+   "id": "Allflame_Ember_of_Toads",
+   "name": "Allflame Ember of Toads",
+   "type": "allflame",
+   "group": "Allflame",
+   "limit": 3,
+   "stats": [
+    "Adds Monster Packs to Area",
+    "Pack monsters are Harmless Toads"
+   ],
+   "icon": "AllflameToad.webp",
+   "removedIn": null
+  }
+ ]
+}

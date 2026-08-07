@@ -1459,13 +1459,15 @@ input[type="range"]::-moz-range-thumb {
 
 .atlas-modes { margin-bottom: 0; }
 
-.atlas-hint {
+.atlas-hint,
+.strat-hint {
   margin: 0;
   color: var(--text-dim);
   font-size: 13px;
   line-height: 1.45;
 }
-.atlas-hint b { color: var(--text); }
+.atlas-hint b,
+.strat-hint b { color: var(--text); }
 
 .atlas-status {
   padding: 9px 11px;
@@ -1493,6 +1495,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .atlas-target-list,
+.strat-saved-list,
 .atlas-hits {
   display: flex;
   flex-direction: column;
@@ -1657,13 +1660,15 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* Blocked (excluded) nodes in the Atlas Selector */
-.atlas-list-head {
+.atlas-list-head,
+.strat-list-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
-.atlas-link-btn {
+.atlas-link-btn,
+.strat-link-btn {
   padding: 0;
   border: none;
   background: none;
@@ -1674,7 +1679,8 @@ input[type="range"]::-moz-range-thumb {
   text-transform: uppercase;
   cursor: pointer;
 }
-.atlas-link-btn:hover { color: var(--accent); }
+.atlas-link-btn:hover,
+.strat-link-btn:hover { color: var(--accent); }
 .atlas-target.atlas-blocked {
   border-left-color: #c2413f;
   color: var(--text-dim);
@@ -1686,7 +1692,8 @@ input[type="range"]::-moz-range-thumb {
   font-family: 'Rajdhani', sans-serif;
   font-size: 13px;
 }
-.atlas-drift {
+.atlas-drift,
+.strat-msg {
   padding: 6px 9px;
   border-left: 3px solid var(--blue);
   border-radius: 2px;
@@ -1913,8 +1920,10 @@ input[type="range"]::-moz-range-thumb {
   font-size: 11px;
 }
 
-/* Saved builds */
-.atlas-build {
+/* Saved builds. The strategy library is the same row, so it shares these
+   rules rather than copying them — the two lists are meant to look alike. */
+.atlas-build,
+.strat-saved {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1923,8 +1932,10 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 2px;
   background: var(--bg-input);
 }
-.atlas-build.current { border-left-color: var(--accent); }
-.atlas-build-load {
+.atlas-build.current,
+.strat-saved.current { border-left-color: var(--accent); }
+.atlas-build-load,
+.strat-saved-load {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1938,19 +1949,23 @@ input[type="range"]::-moz-range-thumb {
   text-align: left;
   cursor: pointer;
 }
-.atlas-build-load:hover .atlas-build-name { color: var(--accent); }
-.atlas-build-name {
+.atlas-build-load:hover .atlas-build-name,
+.strat-saved-load:hover .strat-saved-name { color: var(--accent); }
+.atlas-build-name,
+.strat-saved-name {
   max-width: 100%;
   overflow: hidden;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.atlas-build-load small {
+.atlas-build-load small,
+.strat-saved-load small {
   color: var(--text-dim);
   font-size: 11px;
 }
-.atlas-build > button:last-child {
+.atlas-build > button:last-child,
+.strat-saved > button:last-child {
   flex: 0 0 auto;
   padding: 0 4px;
   border: none;
@@ -1960,7 +1975,8 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1;
   cursor: pointer;
 }
-.atlas-build > button:last-child:hover { color: var(--red); }
+.atlas-build > button:last-child:hover,
+.strat-saved > button:last-child:hover { color: var(--red); }
 
 /* ============================================================
    MINESWEEPER
@@ -2031,4 +2047,279 @@ input[type="range"]::-moz-range-thumb {
 
 @media (max-width: 640px) {
   .ms-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   MAP STRATEGY
+   ============================================================ */
+.strat-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+.strat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+/* The picker is the tall half; sticking it keeps the device in view while you
+   scroll a hundred-odd scarabs. */
+.strat-col:last-child { position: sticky; top: 18px; }
+
+/* The list header, the tiny text button, the hint, the message and the saved
+   entry row are the atlas panel's, shared rather than copied so the two tools
+   cannot drift apart. Only the differences live here. */
+a.strat-link-btn { text-decoration: none; }
+.strat-share-hint {
+  margin-top: -2px;
+  font-size: 11px;
+}
+.strat-msg { margin-top: 10px; }
+
+.strat-mono {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.strat-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.strat-btn-row input { flex: 1; min-width: 0; }
+.strat-btn-row .poe-btn { flex: 0 0 auto; justify-content: center; }
+
+.strat-empty-note {
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* --- attached tree --- */
+.strat-tree {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-dim);
+  border-radius: 3px;
+  background: var(--bg-input);
+}
+.strat-tree-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.strat-tree-points {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  color: var(--accent);
+}
+.strat-tree-version {
+  flex: 1;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.strat-keystones {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.strat-keystones li {
+  padding: 2px 8px;
+  border: 1px solid rgba(184,64,64,0.35);
+  border-radius: 2px;
+  background: rgba(184,64,64,0.12);
+  font-size: 12px;
+  color: #cf8a80;
+}
+
+/* --- the device --- */
+.strat-slot-count {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.strat-slot-count.over { color: var(--red); }
+
+.strat-slots {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.strat-slot {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-input);
+}
+.strat-slot.bad {
+  border-color: rgba(184,64,64,0.5);
+  background: rgba(184,64,64,0.08);
+}
+.strat-slot.empty {
+  justify-content: center;
+  border-style: dashed;
+  background: none;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.strat-slot-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.strat-slot-body { flex: 1; min-width: 0; }
+.strat-slot-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.strat-slot-stat {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--blue);
+}
+.strat-count { color: var(--accent); }
+.strat-slot-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 2px;
+}
+.strat-slot-actions button {
+  width: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.strat-slot-actions button:hover { color: var(--red); }
+
+.strat-issue {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--accent-dim);
+  background: rgba(200,168,75,0.06);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.strat-issue.error {
+  border-left-color: var(--red);
+  background: rgba(184,64,64,0.1);
+  color: #d99a94;
+}
+
+.strat-notes {
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* --- picker --- */
+.strat-kinds { margin-bottom: 10px; }
+.strat-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.strat-filters input { flex: 2; min-width: 0; }
+.strat-filters select { flex: 1; min-width: 0; }
+
+.strat-picker {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.strat-group-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 4px;
+  background: var(--bg-card);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.strat-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.strat-item:hover:not(:disabled) {
+  border-color: var(--border-glow);
+  background: #1a1e2b;
+}
+.strat-item.picked { border-color: var(--accent-dim); background: rgba(200,168,75,0.07); }
+.strat-item.unavailable { opacity: 0.4; cursor: not-allowed; }
+.strat-item-icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.strat-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.strat-item-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.strat-item-stat {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.strat-item-limit {
+  flex: 0 0 auto;
+  padding-top: 2px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .strat-grid { grid-template-columns: minmax(0, 1fr); }
+  .strat-col:last-child { position: static; }
+  .strat-picker { max-height: 60vh; }
 }

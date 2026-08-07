@@ -1,0 +1,323 @@
+<poe-tool-page
+  [pips]="[true, true, false]"
+  [heading]="'Map Strategy'"
+  [subtitle]="'Atlas Tree + Map Device'"
+>
+  @if (loading()) {
+    <poe-card [maxWidth]="'520px'">
+      <div class="tool-intro">{{ loading() }}</div>
+    </poe-card>
+  } @else {
+    <div class="strat-grid">
+      <!-- ------------------------------------------------------------ left -->
+      <div class="strat-col">
+        <poe-card>
+          <div class="tool-intro">
+            A strategy is the whole setup: the atlas tree you run, the
+            <strong>{{ slotLimit }}</strong> scarabs and embers you load the map device with, and
+            what you meant by it. The tree decides which game version the items are read against,
+            so one that has been removed cannot quietly stay in an old plan.
+          </div>
+
+          <div class="strat-list-head">
+            <div class="section-label">Atlas tree</div>
+            @if (treeCode()) {
+              <button type="button" class="strat-link-btn" (click)="detachTree()">detach</button>
+            }
+          </div>
+
+          @if (atlasBuilds().length) {
+            <div class="poe-field">
+              <div class="poe-field-label">From your saved builds</div>
+              <select (change)="onBuildPicked($event)">
+                <option value="">Pick a saved build...</option>
+                @for (build of atlasBuilds(); track build.id) {
+                  <option [value]="build.id">
+                    {{ build.name }}@if (build.points) { · {{ build.points }} pts }
+                  </option>
+                }
+              </select>
+            </div>
+          }
+
+          <div class="poe-field">
+            <div class="poe-field-label">Or paste an atlas code</div>
+            <input
+              type="text"
+              class="strat-mono"
+              placeholder="AT3:..."
+              autocomplete="off"
+              [value]="treeCode()"
+              (input)="onTreeInput($event)"
+            />
+          </div>
+
+          @if (treeMessage()) {
+            <div class="strat-issue error">{{ treeMessage() }}</div>
+          }
+
+          @if (treeSummary(); as tree) {
+            <div class="strat-tree">
+              <div class="strat-tree-head">
+                <span class="strat-tree-points">{{ tree.points }} points</span>
+                <span class="strat-tree-version">tree {{ gameVersion() }}</span>
+                <a class="strat-link-btn" routerLink="/atlas" [queryParams]="atlasParams()"
+                  >open in Atlas Selector</a
+                >
+              </div>
+              @if (tree.keystones.length) {
+                <ul class="strat-keystones">
+                  @for (keystone of tree.keystones; track keystone) {
+                    <li>{{ keystone }}</li>
+                  }
+                </ul>
+              } @else {
+                <div class="strat-empty-note">No keystones allocated.</div>
+              }
+            </div>
+          } @else if (!treeCode()) {
+            <div class="strat-empty-note">
+              No tree attached. Items are read against {{ gameVersion() }}, the newest tree this
+              build ships.
+            </div>
+          }
+        </poe-card>
+
+        <poe-card>
+          <div class="strat-list-head">
+            <div class="section-label">Map device</div>
+            <div class="strat-slot-count" [class.over]="used() > slotLimit">
+              {{ used() }} / {{ slotLimit }}
+              @if (picks().length) {
+                <button type="button" class="strat-link-btn" (click)="clearPicks()">clear</button>
+              }
+            </div>
+          </div>
+
+          <ul class="strat-slots">
+            @for (slot of slots(); track $index) {
+              @if (slot.item; as item) {
+                <li class="strat-slot" [class.bad]="slot.problem">
+                  @if (item.icon) {
+                    <img class="strat-slot-icon" [src]="icon(item)" [alt]="item.name" />
+                  } @else {
+                    <span class="strat-slot-icon"></span>
+                  }
+                  <div class="strat-slot-body">
+                    <div class="strat-slot-name">
+                      @if (slot.count > 1) {
+                        <span class="strat-count">{{ slot.count }}×</span>
+                      }
+                      {{ item.name }}
+                    </div>
+                    @for (stat of item.stats; track $index) {
+                      <div class="strat-slot-stat">{{ stat }}</div>
+                    }
+                  </div>
+                  <div class="strat-slot-actions">
+                    <button type="button" title="Remove one" (click)="remove(item.code)">−</button>
+                    <button type="button" title="Remove all" (click)="drop(item.code)">&times;</button>
+                  </div>
+                </li>
+              } @else if (slot.count) {
+                <li class="strat-slot bad">
+                  <div class="strat-slot-body">
+                    <div class="strat-slot-name">Unknown item</div>
+                    <div class="strat-slot-stat">Not in the list this build ships.</div>
+                  </div>
+                </li>
+              } @else {
+                <li class="strat-slot empty">Empty slot</li>
+              }
+            }
+          </ul>
+
+          @for (issue of issues(); track $index) {
+            <div class="strat-issue" [class.error]="issue.level === 'error'">{{ issue.text }}</div>
+          }
+        </poe-card>
+
+        <poe-card>
+          <div class="section-label">Notes</div>
+          <textarea
+            class="strat-notes"
+            rows="4"
+            placeholder="How to run it — what to buy, what to skip, which maps..."
+            [value]="notes()"
+            (input)="onNotes($event)"
+          ></textarea>
+        </poe-card>
+
+        <poe-card>
+          <div class="section-label">Share</div>
+          <p class="strat-hint strat-share-hint">
+            The code carries the tree, the items and the notes. It names each item by a number the
+            data file never reuses, so a strategy from an old league still says what it meant.
+          </p>
+          <input class="strat-mono" type="text" readonly [value]="shareCode()" />
+          <div class="strat-btn-row">
+            <button class="poe-btn poe-btn-dim" (click)="copyCode()">Copy code</button>
+            <button class="poe-btn poe-btn-dim" (click)="copyLink()">Copy link</button>
+          </div>
+          <div class="strat-btn-row">
+            <input
+              type="text"
+              placeholder="Paste a strategy or atlas code..."
+              autocomplete="off"
+              [value]="importText()"
+              (input)="onImportInput($event)"
+              (keydown.enter)="importCode()"
+            />
+            <button class="poe-btn poe-btn-blue" [disabled]="!importText()" (click)="importCode()">
+              Import
+            </button>
+          </div>
+          @if (shareMessage()) {
+            <div class="strat-msg">{{ shareMessage() }}</div>
+          }
+        </poe-card>
+
+        <poe-card>
+          <div class="strat-list-head">
+            <div class="section-label">Saved strategies ({{ library().length }})</div>
+            @if (library().length) {
+              <button type="button" class="strat-link-btn" (click)="exportLibrary()">copy all</button>
+            }
+          </div>
+          <div class="strat-btn-row">
+            <input
+              type="text"
+              placeholder="Name this strategy..."
+              autocomplete="off"
+              [value]="name()"
+              (input)="onNameInput($event)"
+              (keydown.enter)="save()"
+            />
+            <button class="poe-btn poe-btn-dim" [disabled]="!name().trim()" (click)="save()">
+              Save
+            </button>
+          </div>
+          @if (library().length) {
+            <ul class="strat-saved-list">
+              @for (entry of library(); track entry.id) {
+                <li class="strat-saved" [class.current]="entry.id === currentSavedId()">
+                  <button type="button" class="strat-saved-load" (click)="load(entry)">
+                    <span class="strat-saved-name">{{ entry.name }}</span>
+                    <small>
+                      @if (entry.points) {
+                        {{ entry.points }} pts ·
+                      }
+                      {{ entry.slots }} / {{ slotLimit }} slots
+                    </small>
+                  </button>
+                  <button type="button" title="Delete" (click)="delete(entry)">&times;</button>
+                </li>
+              }
+            </ul>
+          }
+          <div class="strat-btn-row">
+            <button
+              class="poe-btn poe-btn-red"
+              title="Clears the tree, the device and the notes"
+              (click)="reset()"
+            >
+              Reset
+            </button>
+          </div>
+        </poe-card>
+      </div>
+
+      <!-- ----------------------------------------------------------- right -->
+      <div class="strat-col">
+        <poe-card>
+          <div class="section-label">Scarabs &amp; embers</div>
+
+          <div class="mode-toggle strat-kinds">
+            <label class="mode-label">
+              <input type="radio" name="strat-kind" [checked]="kind() === 'all'" (change)="setKind('all')" />
+              <span class="mode-tab">All</span>
+            </label>
+            <label class="mode-label">
+              <input type="radio" name="strat-kind" [checked]="kind() === 'scarab'" (change)="setKind('scarab')" />
+              <span class="mode-tab">Scarabs</span>
+            </label>
+            <label class="mode-label">
+              <input type="radio" name="strat-kind" [checked]="kind() === 'allflame'" (change)="setKind('allflame')" />
+              <span class="mode-tab">Embers</span>
+            </label>
+          </div>
+
+          <div class="strat-filters">
+            <input
+              type="search"
+              placeholder="Search name or effect..."
+              autocomplete="off"
+              [value]="query()"
+              (input)="onQuery($event)"
+            />
+            <select [value]="group()" (change)="onGroupChange($event)">
+              <option value="">Every mechanic</option>
+              @for (name of groupNames(); track name) {
+                <option [value]="name" [selected]="name === group()">{{ name }}</option>
+              }
+            </select>
+          </div>
+
+          @if (treeSummary()?.blockers?.length) {
+            <div class="strat-issue error">
+              {{ treeSummary()!.blockers.join(' and ') }} is allocated, so the map device takes
+              nothing. Detach the tree or drop the keystone to pick again.
+            </div>
+          } @else if (used() >= slotLimit) {
+            <div class="strat-issue">
+              All {{ slotLimit }} slots are full. Remove something to pick again.
+            </div>
+          }
+
+          <div class="strat-picker">
+            @for (section of visible(); track section.name) {
+              <div class="strat-group-head">{{ section.name }}</div>
+              @for (item of section.items; track item.code) {
+                <button
+                  type="button"
+                  class="strat-item"
+                  [class.picked]="countOf(item) > 0"
+                  [class.unavailable]="!!disabledReason(item)"
+                  [disabled]="!!disabledReason(item)"
+                  [title]="disabledReason(item) || 'Add to the map device'"
+                  (click)="add(item)"
+                >
+                  @if (item.icon) {
+                    <img class="strat-item-icon" [src]="icon(item)" [alt]="item.name" />
+                  } @else {
+                    <span class="strat-item-icon"></span>
+                  }
+                  <span class="strat-item-body">
+                    <span class="strat-item-name">
+                      {{ item.name }}
+                      @if (countOf(item)) {
+                        <span class="strat-count">×{{ countOf(item) }}</span>
+                      }
+                    </span>
+                    @for (stat of item.stats; track $index) {
+                      <span class="strat-item-stat">{{ stat }}</span>
+                    }
+                  </span>
+                  <span class="strat-item-limit">
+                    @if (disabledReason(item)) {
+                      {{ disabledReason(item) }}
+                    } @else {
+                      max {{ item.limit }}
+                    }
+                  </span>
+                </button>
+              }
+            } @empty {
+              <div class="strat-empty-note">Nothing matches that.</div>
+            }
+          </div>
+        </poe-card>
+      </div>
+    </div>
+  }
+</poe-tool-page>

@@ -197,3 +197,69 @@ The version selector appears by itself once there is more than one entry. Never 
 `id` or repoint it at different data — old share codes resolve through it.
 
 The `line` and `masteryOverlay` sheets are intentionally skipped — nothing draws them.
+
+## Map Strategy
+
+A tree is only half of what you set up before mapping. The other half is the map device: up to
+**five** scarabs and allflame embers, each with its own cap on how many copies one map takes. This
+tool holds both, plus a note about how the thing is meant to be run.
+
+It is a tab of its own rather than another panel on the Atlas Selector. A tree and a scarab set have
+different lifetimes — the tree lasts a league, the scarabs change with what is cheap this week — and
+one tree usually backs several strategies. Keeping them apart lets a tree be swapped without
+dragging a device behind it, and lets the atlas share code stay what it already is: a tree and
+nothing else.
+
+The tree is attached as an atlas share code, picked from your saved atlas builds or pasted. That is
+the join between the two tools, and it is what decides which game version the items are read
+against — a code names the dataset it was built against, so a strategy cannot describe a 3.29 tree
+and a 3.31 scarab without saying so.
+
+Three things are checked as you build, because all three are things the game would simply refuse:
+
+- **five slots**, counting copies — three of one scarab and two of another is a full device
+- **each item's own limit**, which is 1 for most and up to 5 for a few
+- **Unwavering Vision**, which says your maps cannot be modified by fragments. With it allocated
+  the device takes nothing at all, so the picker goes dead and anything already in there is an
+  error. The keystone is found by its stat text rather than its node id, because ids are not stable
+  across GGG's exports and the wording largely is.
+
+The picker refuses to add what would break a rule; an imported code is judged rather than refused,
+since it may come from a league where the rule was different.
+
+### Item data
+
+`public/assets/strategy/items.json` is every scarab and ember, scraped from
+[poedb](https://poedb.tw/us/Scarab) by `npm run fetch:strategy -- <version>`. Icons are downloaded
+alongside rather than hotlinked, so the page does not put poedb's CDN in its render path. A couple
+of icons that CDN refuses to serve ship as blank — the row keeps the gap.
+
+The file is a **merge**, never a replacement, which is what makes an old strategy readable:
+
+- `code` is the number share codes name an item by. Assigned once, never reused, kept even after
+  the item leaves the game.
+- `removedIn` is filled in by the first scrape that no longer finds an item. The item stays in the
+  file, so a strategy that used it can say "removed in 3.31" instead of showing a blank slot.
+- `since` is the mirror for items added later. It is absent on everything the first scrape saw:
+  those existed at or before the earliest version we ever looked at, and pinning each to the league
+  it was introduced in would be inventing data the scrape never had.
+
+So adding a league is `npm run fetch:strategy -- 3.30` after the tree for it is in place. Rerunning
+against a version already in the file is safe and idempotent.
+
+### Sharing a strategy
+
+`ST1:…`, the same shape as the atlas codes, and "Copy link" wraps it in a `?s=` URL which is
+stripped once applied. It carries the tree, the items and the notes — a real one with a 20 point
+tree and a note is about 110 characters.
+
+The atlas plan travels as the raw bytes out of its own code rather than as the code's text: base64
+of base64 would cost a third more for nothing, and re-encoding through a decode would quietly
+upgrade an old atlas code to the current format and change what the tree meant. The paste box takes
+an atlas code too — pasting the tree you just planned into the only paste box on the page is the
+obvious thing to try — and a tab tells an exported library from a single code, the same way the
+atlas one does.
+
+`npm run test:strategy` covers the format round trip (including an embedded older atlas code, notes
+with an emoji, and item codes past one varint byte), the three rules, the version arithmetic, and
+the shipped data itself: distinct codes, distinct ids, every named icon actually present.

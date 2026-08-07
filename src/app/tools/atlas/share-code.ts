@@ -79,13 +79,13 @@ function readVarint(bytes: Uint8Array, cursor: { at: number }): number {
 
 // --- base64url ---------------------------------------------------------------
 
-function toBase64Url(bytes: Uint8Array): string {
+export function toBase64Url(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function fromBase64Url(text: string): Uint8Array {
+export function fromBase64Url(text: string): Uint8Array {
   const padded = text.replace(/-/g, '+').replace(/_/g, '/');
   let binary: string;
   try {
@@ -226,12 +226,13 @@ function isConnectedToCentre(tree: Tree, allocated: Set<number>): boolean {
 }
 
 /**
- * Reads the tree version and mode without needing that tree to be loaded, so a
- * caller can fetch the right dataset before decoding the rest.
+ * Takes an `AT…` code apart without interpreting the payload. A strategy code
+ * carries an atlas plan whole, so it needs the exact bytes and the format that
+ * wrapped them — re-encoding through a decode would silently upgrade an old
+ * code to the current format and change what the tree meant.
  */
-export function peekPlan(code: string): { formatVersion: number; treeVersion: number } {
-  const trimmed = code.trim();
-  const match = /^AT(\d+):([A-Za-z0-9\-_]+)$/.exec(trimmed);
+export function unwrapCode(code: string): { formatVersion: number; payload: Uint8Array } {
+  const match = /^AT(\d+):([A-Za-z0-9\-_]+)$/.exec(code.trim());
   if (!match) throw new ShareCodeError('this does not look like an atlas code');
   const formatVersion = Number(match[1]);
   if (!READABLE_FORMATS.has(formatVersion)) {
@@ -239,9 +240,22 @@ export function peekPlan(code: string): { formatVersion: number; treeVersion: nu
       `code is format ${formatVersion}, this tool reads ${[...READABLE_FORMATS].join(' and ')}`,
     );
   }
-  const bytes = fromBase64Url(match[2]);
-  if (bytes.length < 2) throw new ShareCodeError('code is too short');
-  return { formatVersion, treeVersion: bytes[0] };
+  const payload = fromBase64Url(match[2]);
+  if (payload.length < 2) throw new ShareCodeError('code is too short');
+  return { formatVersion, payload };
+}
+
+export function wrapCode(formatVersion: number, payload: Uint8Array): string {
+  return `${PREFIX}${formatVersion}:${toBase64Url(payload)}`;
+}
+
+/**
+ * Reads the tree version and mode without needing that tree to be loaded, so a
+ * caller can fetch the right dataset before decoding the rest.
+ */
+export function peekPlan(code: string): { formatVersion: number; treeVersion: number } {
+  const { formatVersion, payload } = unwrapCode(code);
+  return { formatVersion, treeVersion: payload[0] };
 }
 
 export function decodePlan(code: string, tree: Tree): AtlasPlan {
