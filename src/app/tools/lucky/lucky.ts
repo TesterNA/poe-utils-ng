@@ -1,9 +1,17 @@
 /* Lucky Percentage Calculator */
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { PoeCard } from '../../shared/poe-card';
 import { ToolPage } from '../../shared/tool-page';
 
 type LuckyTab = 'normal' | 'reverse';
+
+/**
+ * How many independent attempts you get, best one kept. Two is what the game
+ * calls lucky; three is the same arithmetic one roll further, so it is a number
+ * rather than a second pair of formulas.
+ */
+export const ROLL_COUNTS = [2, 3] as const;
+type Rolls = (typeof ROLL_COUNTS)[number];
 
 /** One result banner: hidden until a calculation runs, red when the input is bad. */
 interface LuckyResult {
@@ -33,6 +41,9 @@ function invalid(): LuckyResult {
 })
 export class Lucky {
   readonly tab = signal<LuckyTab>('normal');
+  readonly rollCounts = ROLL_COUNTS;
+  readonly rolls = signal<Rolls>(2);
+  readonly rollWord = computed(() => (this.rolls() === 2 ? 'Two' : 'Three'));
 
   readonly initialPct = signal('');
   readonly luckyPct = signal('');
@@ -42,6 +53,16 @@ export class Lucky {
 
   switchTab(tab: LuckyTab): void {
     this.tab.set(tab);
+    this.clear();
+  }
+
+  /** Both directions are about the same roll count, so it is one switch for both. */
+  setRolls(rolls: Rolls): void {
+    this.rolls.set(rolls);
+    this.clear();
+  }
+
+  private clear(): void {
     this.result1.set(CLEARED);
     this.result2.set(CLEARED);
   }
@@ -56,14 +77,14 @@ export class Lucky {
     this.result2.set(CLEARED);
   }
 
-  /** Two independent rolls at the same chance: 1 − (1 − p)². */
+  /** n independent rolls at the same chance, best kept: 1 − (1 − p)ⁿ. */
   calcLucky(): void {
     const val = parseFloat(this.initialPct());
     if (isNaN(val) || val < 0 || val > 100) {
       this.result1.set(invalid());
       return;
     }
-    const lucky = (1 - Math.pow(1 - val / 100, 2)) * 100;
+    const lucky = (1 - Math.pow(1 - val / 100, this.rolls())) * 100;
     this.result1.set({
       show: true,
       error: false,
@@ -72,14 +93,14 @@ export class Lucky {
     });
   }
 
-  /** Inverse of the above: p = 1 − √(1 − lucky). */
+  /** Inverse of the above: p = 1 − ⁿ√(1 − lucky). */
   calcRequired(): void {
     const val = parseFloat(this.luckyPct());
     if (isNaN(val) || val < 0 || val > 100) {
       this.result2.set(invalid());
       return;
     }
-    const initial = (1 - Math.sqrt(1 - val / 100)) * 100;
+    const initial = (1 - Math.pow(1 - val / 100, 1 / this.rolls())) * 100;
     this.result2.set({
       show: true,
       error: false,

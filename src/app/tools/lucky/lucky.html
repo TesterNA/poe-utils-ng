@@ -1,5 +1,32 @@
-<poe-tool-page [pips]="[true, false, true]" [heading]="'Lucky Percentage Calculator'" [subtitle]="'Two-Roll Probability'">
+<poe-tool-page
+  [pips]="[true, false, true]"
+  [heading]="'Lucky Percentage Calculator'"
+  [subtitle]="rollWord() + '-Roll Probability'"
+>
   <poe-card [maxWidth]="'460px'">
+    <!-- The roll count applies to both directions, so it sits above the
+         direction tabs rather than inside either one. -->
+    <div class="mode-toggle">
+      @for (count of rollCounts; track count) {
+        <label class="mode-label">
+          <input
+            type="radio"
+            name="lucky-rolls"
+            [value]="count"
+            [checked]="rolls() === count"
+            (change)="setRolls(count)"
+          />
+          <span class="mode-tab">
+            @if (count === 2) {
+              Lucky · 2 rolls
+            } @else {
+              Triple · 3 rolls
+            }
+          </span>
+        </label>
+      }
+    </div>
+
     <div class="mode-toggle">
       <label class="mode-label">
         <input
@@ -44,7 +71,8 @@
           [class.error]="result1().error"
         >{{ result1().label }}@if (result1().value) {<strong>{{ result1().value }}</strong>}</div>
         <div class="info-text">
-          Calculate the lucky percentage when you have two attempts at the given initial chance.
+          Calculate the lucky percentage when you have {{ rolls() }} attempts at the given initial
+          chance and the best one counts.
         </div>
       </div>
     }
@@ -72,7 +100,8 @@
           [class.error]="result2().error"
         >{{ result2().label }}@if (result2().value) {<strong>{{ result2().value }}</strong>}</div>
         <div class="info-text">
-          Calculate what initial percentage you need to achieve the desired lucky percentage.
+          Calculate what initial percentage you need for each of {{ rolls() }} attempts to reach the
+          desired lucky percentage.
         </div>
       </div>
     }
