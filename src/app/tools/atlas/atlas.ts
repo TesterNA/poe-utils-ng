@@ -81,6 +81,8 @@ const KIND_PENALTY: Record<string, number> = {
   keystone: 4,
   normal: 1,
   notable: 0,
+  // free and on every route, so its weight is irrelevant
+  structural: 0,
 };
 
 const STORAGE_KEY = 'poe_atlas_state';
@@ -224,7 +226,7 @@ export class Atlas {
       this.renderer = new Renderer(canvas, this.tree, sprites);
       this.renderer.fit();
       this.exposeDebugHandle();
-      this.builds.set(loadBuilds());
+      this.builds.set(this.recountBuilds(loadBuilds()));
       this.startWorker();
       if (inboundCode) {
         this.importCode(inboundCode);
@@ -389,6 +391,24 @@ export class Atlas {
     this.bonusPoints.set(this.grantedBy(granting));
   }
 
+  /** Same, for a list of node ids rather than indices. */
+  private paidIds(ids: string[]): number {
+    const tree = this.tree;
+    if (!tree) return ids.length;
+    let total = 0;
+    for (const id of ids) if (tree.byId.get(id)?.costsPoint) total++;
+    return total;
+  }
+
+  /** How many of these nodes actually cost a point. */
+  private paid(set: Set<number>): number {
+    const tree = this.tree;
+    if (!tree) return set.size;
+    let total = 0;
+    for (const idx of set) if (tree.nodes[idx].costsPoint) total++;
+    return total;
+  }
+
   /** Atlas points handed out by the nodes in `set`. */
   private grantedBy(set: Set<number>): number {
     const tree = this.tree;
@@ -400,8 +420,8 @@ export class Atlas {
 
   private syncCounts(): void {
     const tree = this.tree;
-    this.allocatedCount.set(this.allocated.size);
-    this.routeCount.set(this.route.size);
+    this.allocatedCount.set(this.paid(this.allocated));
+    this.routeCount.set(this.paid(this.route));
     this.routeApplied.set(sameSet(this.allocated, this.route));
     this.refreshBudget();
     const chips = (set: Set<number>): NodeChip[] =>
@@ -521,7 +541,7 @@ export class Atlas {
       this.shareMessage.set(
         this.targetSet.size > 0
           ? `Imported ${this.targetSet.size} targets from an older code.`
-          : `Imported a ${this.allocated.size} point tree.`,
+          : `Imported a ${this.paid(this.allocated)} point tree.`,
       );
     } catch (err) {
       this.shareMessage.set(
@@ -576,6 +596,31 @@ export class Atlas {
 
   // --------------------------------------------------------- saved builds ----
 
+  /**
+   * The stored point count is only a label, and it was written by whatever
+   * version of the app saved it — including before the free junction stopped
+   * being counted. Recomputing it from the code keeps the library honest; the
+   * codes themselves are untouched, so nothing about the trees changes.
+   */
+  private recountBuilds(builds: SavedBuild[]): SavedBuild[] {
+    const tree = this.tree;
+    if (!tree) return builds;
+    let changed = false;
+    const next = builds.map((build) => {
+      try {
+        if (peekPlan(build.code).treeVersion !== this.treeVersion()) return build;
+        const points = this.paidIds(decodePlan(build.code, tree).allocated);
+        if (points === build.points) return build;
+        changed = true;
+        return { ...build, points };
+      } catch {
+        return build;
+      }
+    });
+    if (changed) storeBuilds(next);
+    return next;
+  }
+
   onBuildNameInput(event: Event): void {
     this.buildName.set((event.target as HTMLInputElement).value);
   }
@@ -584,7 +629,7 @@ export class Atlas {
     const name = this.buildName().trim();
     const code = this.shareCode();
     if (!name || !code) return;
-    const points = this.route.size > 0 ? this.route.size : this.allocated.size;
+    const points = this.paid(this.route.size > 0 ? this.route : this.allocated);
     const next = upsertBuild(this.builds(), {
       name,
       code,
@@ -638,7 +683,7 @@ export class Atlas {
         return {
           ...build,
           treeVersion,
-          points: decodePlan(build.code, this.tree).allocated.length,
+          points: this.paidIds(decodePlan(build.code, this.tree).allocated),
         };
       } catch {
         return build;
@@ -850,7 +895,7 @@ export class Atlas {
     const result = msg.result;
     this.route = new Set(result.nodes);
     this.route.delete(tree.rootIdx);
-    const cost = this.route.size;
+    const cost = this.paid(this.route);
     const flag = result.optimal
       ? '✓ optimal'
       : this.tier === 'fast'

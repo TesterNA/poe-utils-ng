@@ -34,12 +34,13 @@ interface Described {
   id: string;
   name: string;
   kind: string;
+  costsPoint: boolean;
 }
 
 function describe(tree: Tree, set: Set<number>): Described[] {
   return [...set].map((idx) => {
     const node = tree.nodes[idx];
-    return { id: node.id, name: node.name, kind: node.kind };
+    return { id: node.id, name: node.name, kind: node.kind, costsPoint: node.costsPoint };
   });
 }
 
@@ -57,7 +58,8 @@ export function createAtlasDebug(tree: Tree, read: () => AtlasDebugState): Atlas
     return {
       mode: state.mode,
       points: {
-        allocated: state.allocated.size,
+        allocated: allocated.filter((n) => n.costsPoint).length,
+        nodesIncludingFree: state.allocated.size,
         base: state.basePoints,
         granted: state.bonusPoints,
         limit: state.basePoints + state.bonusPoints,
@@ -90,7 +92,8 @@ export function createAtlasDebug(tree: Tree, read: () => AtlasDebugState): Atlas
     const lines = [
       'Atlas Selector debug',
       `mode          ${d.mode}`,
-      `allocated     ${d.points.allocated}  (limit ${d.points.limit} = base ${d.points.base} + granted ${d.points.granted})`,
+      `allocated     ${d.points.allocated} points across ${d.points.nodesIncludingFree} nodes ` +
+        `(limit ${d.points.limit} = base ${d.points.base} + granted ${d.points.granted})`,
       `route         ${d.counts.route}`,
       `targets       ${d.counts.targets}`,
       `blocked       ${d.counts.blocked}`,

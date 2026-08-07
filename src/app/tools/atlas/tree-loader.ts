@@ -26,6 +26,7 @@ const RADIUS: Record<NodeKind, number> = {
   wormhole: 145,
   mastery: 113,
   root: 200,
+  structural: 51,
 };
 
 /**
@@ -49,6 +50,10 @@ function kindOf(id: string, raw: RawTree['nodes'][string]): NodeKind {
   if (raw.isWormhole) return 'wormhole';
   if (raw.isKeystone) return 'keystone';
   if (raw.isNotable) return 'notable';
+  // The junction beside the Atlas centre has no name, stats or icon: it is the
+  // fan-out point every route crosses, not a passive you buy. Recognised from
+  // the data so a new tree's equivalent is picked up without a hardcoded id.
+  if (!raw.name && !(raw.stats ?? []).some((stat) => stat.trim())) return 'structural';
   return 'normal';
 }
 
@@ -80,7 +85,10 @@ export function buildTree(raw: RawTree): Tree {
       reminder: r.reminderText ?? [],
       flavour: r.flavourText ?? [],
       kind,
+      // Structural junctions stay allocatable: routes run through them, they
+      // just never cost anything.
       allocatable: kind !== 'mastery' && kind !== 'root',
+      costsPoint: kind !== 'mastery' && kind !== 'root' && kind !== 'structural',
       group: r.group ?? 0,
       orbit,
       orbitIndex,

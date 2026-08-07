@@ -107,6 +107,17 @@ everything that hung off it. Hovering previews the path and its cost.
 of them for the fewest points. "Apply route" turns the result into a real allocation you can keep
 extending by hand in mode 1.
 
+### What costs a point
+
+Not every node in a tree is a passive you buy. The Atlas centre is free, and so is the unnamed
+junction beside it — the fan-out point with no name, stats or icon that every route crosses. Both
+stay *in* the tree, since paths run through them and a share code has to reproduce them; they simply
+do not count. Counting the junction is why a full tree used to read 138 points where the game charges
+137.
+
+The rule comes from the data (no name and no stats), not a hardcoded id, so a new league's
+equivalent is recognised on its own. Neither node can be clicked, so the junction cannot be removed.
+
 ### How mode 2 is solved
 
 Every atlas passive costs exactly one point, and a tree with `V` nodes has `V-1` edges — so "fewest

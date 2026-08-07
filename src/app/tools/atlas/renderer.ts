@@ -94,7 +94,7 @@ export class Renderer {
     let best: TreeNode | null = null;
     let bestDist = Infinity;
     for (const node of this.tree.nodes) {
-      if (node.kind === 'mastery') continue;
+      if (node.kind === 'mastery' || node.kind === 'structural') continue;
       const dx = node.x - p.x;
       const dy = node.y - p.y;
       const d2 = dx * dx + dy * dy;
@@ -257,7 +257,9 @@ export class Renderer {
         if (detailed) this.sprites.draw(ctx, 'mastery', node.icon, node.x, node.y);
         continue;
       }
-      if (node.kind === 'root') continue;
+      // Nothing is drawn for a structural junction; the lines through it are
+      // the only thing there, exactly as in game.
+      if (node.kind === 'root' || node.kind === 'structural') continue;
 
       const excluded = state.excluded.has(node.idx);
       const allocated = state.allocated.has(node.idx);

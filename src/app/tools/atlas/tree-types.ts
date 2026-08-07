@@ -56,7 +56,15 @@ export interface RawTree {
   points: { totalPoints: number; ascendancyPoints: number };
 }
 
-export type NodeKind = 'normal' | 'notable' | 'keystone' | 'wormhole' | 'mastery' | 'root';
+export type NodeKind =
+  | 'normal'
+  | 'notable'
+  | 'keystone'
+  | 'wormhole'
+  | 'mastery'
+  | 'root'
+  /** a junction with no name, stats or icon — free, and not a real passive */
+  | 'structural';
 
 /** A node prepared for rendering + graph work. `idx` is the graph index. */
 export interface TreeNode {
@@ -70,6 +78,12 @@ export interface TreeNode {
   kind: NodeKind;
   /** mastery nodes are decoration only — not allocatable, not in the graph */
   allocatable: boolean;
+  /**
+   * Whether taking this node spends a point. False for the centre and for the
+   * junction beside it, which are part of every tree but cost nothing — counting
+   * them made a full tree read as 138 points when the game charges 137.
+   */
+  costsPoint: boolean;
   group: number;
   orbit: number;
   orbitIndex: number;
