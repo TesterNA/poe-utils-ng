@@ -7,8 +7,20 @@ import type { Tree } from './tree-types';
  * the interesting states are the ones people hit on the deployed site. It reads
  * live state and never mutates anything.
  */
+export interface AtlasDebugBuild {
+  name: string;
+  /** what the library row shows */
+  storedPoints: number;
+  /** what the code actually works out to now, or null if it cannot be read */
+  actualPoints: number | null;
+  treeVersion: number;
+  codeVersion: number | null;
+  codeChars: number;
+}
+
 export interface AtlasDebugState {
   mode: string;
+  builds: AtlasDebugBuild[];
   allocated: Set<number>;
   targets: Set<number>;
   excluded: Set<number>;
@@ -76,6 +88,12 @@ export function createAtlasDebug(tree: Tree, read: () => AtlasDebugState): Atlas
       gateways: allocated.filter((n) => n.kind === 'wormhole'),
       status: state.status,
       notice: state.notice,
+      builds: state.builds,
+      // A row whose stored number disagrees with its code is the thing to look
+      // at when a saved build shows the wrong point count.
+      buildsDisagreeing: state.builds.filter(
+        (b) => b.actualPoints !== null && b.actualPoints !== b.storedPoints,
+      ),
       allocated,
       route,
       targets: describe(tree, state.targets),
@@ -105,6 +123,22 @@ export function createAtlasDebug(tree: Tree, read: () => AtlasDebugState): Atlas
       }`,
       `status        ${d.status}`,
       `notice        ${d.notice || '-'}`,
+      `builds        ${
+        d.builds.length
+          ? d.builds
+              .map(
+                (b) =>
+                  `${b.name}: shows ${b.storedPoints}` +
+                  (b.actualPoints === null
+                    ? ' (code unreadable here)'
+                    : b.actualPoints === b.storedPoints
+                      ? ''
+                      : ` but code says ${b.actualPoints}`) +
+                  ` [tree ${b.treeVersion}, code AT${b.codeVersion ?? '?'}]`,
+              )
+              .join('\n              ')
+          : 'none'
+      }`,
       '',
       'allocated ids:',
       d.allocatedIds.join(','),

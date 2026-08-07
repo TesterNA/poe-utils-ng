@@ -273,6 +273,24 @@ export class Atlas {
     if (!tree || typeof window === 'undefined') return;
     const api = createAtlasDebug(tree, () => ({
       mode: this.mode(),
+      builds: this.builds().map((build) => {
+        let actualPoints: number | null = null;
+        let codeVersion: number | null = null;
+        try {
+          codeVersion = peekPlan(build.code).formatVersion;
+          actualPoints = this.paidIds(decodePlan(build.code, tree).allocated);
+        } catch {
+          // a code for another tree cannot be counted against this one
+        }
+        return {
+          name: build.name,
+          storedPoints: build.points,
+          actualPoints,
+          treeVersion: build.treeVersion,
+          codeVersion,
+          codeChars: build.code.length,
+        };
+      }),
       allocated: this.allocated,
       targets: this.targetSet,
       excluded: this.excludedSet,
