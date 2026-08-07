@@ -264,9 +264,20 @@ export class Strategy {
   onBuildPicked(event: Event): void {
     const id = (event.target as HTMLSelectElement).value;
     const build = this.atlasBuilds().find((entry) => entry.id === id);
-    (event.target as HTMLSelectElement).value = '';
     if (build) this.attachTree(build.code);
   }
+
+  /**
+   * Which saved build the select should be showing — worked out from the code
+   * that is attached rather than remembered from the click, so it stays right
+   * when the tree arrives from a link, a paste or an imported strategy. Empty
+   * when the attached tree is not one of the saved ones, which is the honest
+   * answer: the library does not have it.
+   */
+  readonly attachedBuildId = computed(() => {
+    const code = this.treeCode();
+    return code ? (this.atlasBuilds().find((entry) => entry.code === code)?.id ?? '') : '';
+  });
 
   /** Reads the attached code against its dataset, fetching that dataset once. */
   private async refreshTree(): Promise<void> {

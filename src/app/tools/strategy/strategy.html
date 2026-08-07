@@ -29,10 +29,22 @@
           @if (atlasBuilds().length) {
             <div class="poe-field">
               <div class="poe-field-label">From your saved builds</div>
+              <!-- selected per option, not [value] on the select: the options
+                   are rendered by @for, so a value bound to the select alone
+                   lands before they exist and the box would still read
+                   "pick one" after a link attached a tree. -->
               <select (change)="onBuildPicked($event)">
-                <option value="">Pick a saved build...</option>
+                <!-- disabled: it is a label for the state, not a way to clear
+                     the tree — "detach" above already does that. -->
+                <option value="" disabled [selected]="!attachedBuildId()">
+                  @if (treeCode()) {
+                    Pasted tree — not from the library
+                  } @else {
+                    Pick a saved build...
+                  }
+                </option>
                 @for (build of atlasBuilds(); track build.id) {
-                  <option [value]="build.id">
+                  <option [value]="build.id" [selected]="build.id === attachedBuildId()">
                     {{ build.name }}@if (build.points) { · {{ build.points }} pts }
                   </option>
                 }

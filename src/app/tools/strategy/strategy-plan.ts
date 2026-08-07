@@ -81,6 +81,12 @@ export function dropPick(picks: Pick[], code: number): Pick[] {
 const BLOCKS_FRAGMENTS = /Maps cannot be modified by Fragments/i;
 
 export interface TreeSummary {
+  /**
+   * What the tree costs, which is not how many nodes it has: structural
+   * junctions are allocatable so routes can run through them, but they are
+   * free. Counting nodes instead read one or two points higher than the atlas
+   * panel for the very same code.
+   */
   points: number;
   keystones: string[];
   /** allocated nodes that stop the map device taking anything */
@@ -93,10 +99,11 @@ export interface TreeSummary {
  */
 export function summariseTree(tree: Tree, code: string): TreeSummary {
   const plan = decodePlan(code, tree);
-  const summary: TreeSummary = { points: plan.allocated.length, keystones: [], blockers: [] };
+  const summary: TreeSummary = { points: 0, keystones: [], blockers: [] };
   for (const id of plan.allocated) {
     const node = tree.byId.get(id);
     if (!node) continue;
+    if (node.costsPoint) summary.points++;
     if (node.kind === 'keystone') summary.keystones.push(node.name);
     if (node.stats.some((stat) => BLOCKS_FRAGMENTS.test(stat))) summary.blockers.push(node.name);
   }
