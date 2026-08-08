@@ -18,8 +18,8 @@
   --bg-sidebar: #080b18;
   --border:     #26305c;
   --border-glow:#7c5cff;
-  --accent:     #9b7bff;
-  --accent-dim: #5b4bb8;
+  --accent:     #8aa0ff;
+  --accent-dim: #4f5bb0;
   --accent-glow:rgba(var(--accent-rgb),0.18);
   --text:       #e8ecf9;
   --text-dim:   #98a1c8;
@@ -34,7 +34,7 @@
   --bar-h:      62px;
 
   /* triplets — the transparent half of the palette */
-  --accent-rgb: 155,123,255;
+  --accent-rgb: 138,160,255;
   --red-rgb:    255,107,129;
   --green-rgb:  63,216,164;
   --blue-rgb:   91,140,255;
@@ -43,7 +43,7 @@
   --shadow-rgb: 4,6,16;
 
   /* accents the tools reach for by meaning rather than by chrome */
-  --accent-bright: #c9b8ff;
+  --accent-bright: #cdd6ff;
   --keystone:   #c46bff;
   --stat:       #7ab6ff;
   --match:      #ff8ad4;
@@ -72,21 +72,27 @@
   --gem-g:      #3fd8a4;
   --gem-b:      #5b8cff;
 
-  /* the ground: two slow lights, no pattern. background-size cycles its list
-     across layers, so one value covers both washes. */
-  --top-wash:
-    radial-gradient(60% 44% at 18% 0%, rgba(124,92,255,0.20) 0%, transparent 70%),
-    radial-gradient(52% 40% at 88% 12%, rgba(63,216,164,0.13) 0%, transparent 70%);
-  --weave-size: cover;
+  /* The ground. Panels are barely-blurred glass, and glass shows nothing unless
+     something with structure passes behind it — a smooth gradient blurred by
+     7px is pixel-for-pixel a flat fill. So the backdrop is built to be worth
+     blurring: four hard-edged lights drifting under the content column, and a
+     fine grid whose crisp lines go soft the moment they cross a panel. That
+     contrast is the effect; the blur alone is not. */
+  --orb-1: rgba(92,110,255,0.62);
+  --orb-2: rgba(40,80,230,0.46);
+  --orb-3: rgba(150,120,255,0.44);
+  --orb-4: rgba(70,140,255,0.40);
+  --grid-line: rgba(255,255,255,0.14);
+  --grid-step: 30px;
 
   /* the corner of a panel, and the corner of whatever sits inside one — a
      segmented tab, a chip, a progress bar. They travel together: a rounded
      panel with a square fill inside it reads as a mistake. */
-  --card-radius: 14px;
-  --inner-radius: 9px;
+  --card-radius: 12px;
+  --inner-radius: 8px;
 
   /* the seat of a selection: a nav item, a checked segment */
-  --selected: linear-gradient(135deg, rgba(124,92,255,0.30), rgba(63,216,164,0.18));
+  --selected: linear-gradient(135deg, rgba(92,110,255,0.34), rgba(140,170,255,0.14));
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -139,15 +145,30 @@ body {
   overflow-x: hidden;
 }
 
-/* The colour field, fixed behind everything and never scrolling with it. */
+/* The ground: lights and grid, fixed behind everything, drifting slowly so the
+   glass above has moving structure to bend. Oversized by 20% on every side so
+   the drift never walks an edge into view. */
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
-  background-image: var(--top-wash);
-  background-size: var(--weave-size);
-  pointer-events: none;
+  inset: -20%;
   z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(26% 22% at 38% 24%, var(--orb-1) 0%, transparent 48%),
+    radial-gradient(22% 20% at 62% 12%, var(--orb-2) 0%, transparent 48%),
+    radial-gradient(26% 24% at 56% 60%, var(--orb-3) 0%, transparent 48%),
+    radial-gradient(22% 20% at 44% 88%, var(--orb-4) 0%, transparent 48%),
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px var(--grid-step)),
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px var(--grid-step));
+  animation: ground-drift 48s ease-in-out infinite alternate;
+}
+@keyframes ground-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(3%, -2%, 0) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
 }
 
 /* ============================================================
@@ -327,15 +348,13 @@ body::before {
     width: auto;
     padding: 9px 14px;
     gap: 9px;
-    border-radius: 11px;
+    border-radius: 9px;
     white-space: nowrap;
   }
   .nav-icon { width: 17px; height: 17px; }
   .sidebar-footer { padding: 0; display: flex; align-items: center; gap: 16px; }
-  .sidebar-account { margin: 0; border-radius: 11px; }
-  .app-content { margin-left: 0; padding-top: var(--bar-h); }
-  /* the atlas is a full-viewport shell; the bar takes its height out */
-  .atlas-shell { height: calc(100vh - var(--bar-h)); }
+  .sidebar-account { margin: 0; border-radius: 9px; }
+  .app-content { padding-top: var(--bar-h); }
 }
 
 /* Ten names and an account do not fit a narrow desktop, so the bar drops to
@@ -349,8 +368,9 @@ body::before {
 /* ============================================================
    MAIN CONTENT
    ============================================================ */
+/* No left margin: on a desktop navigation is the bar overhead (which the rule
+   below clears with padding), and on a phone it is a drawer that floats over. */
 .app-content {
-  margin-left: var(--sidebar-w);
   min-height: 100vh;
   position: relative;
   z-index: 1;
@@ -425,7 +445,7 @@ body::before {
   font-weight: 600;
   letter-spacing: 0.01em;
   text-transform: uppercase;
-  background: linear-gradient(100deg, #c9b8ff 0%, #7ab6ff 48%, #6fe6bd 100%);
+  background: linear-gradient(100deg, #dbe2ff 0%, #8aa0ff 46%, #6ea8ff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -461,14 +481,18 @@ body::before {
    top edge is the only line drawn.
    ============================================================ */
 .poe-card {
-  background: rgba(var(--fg-rgb),0.045);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(var(--fg-rgb),0.09);
-  border-radius: 20px;
+  background: rgba(var(--fg-rgb),0.028);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: 1px solid rgba(var(--fg-rgb),0.14);
+  border-radius: 12px;
   padding: 30px;
   position: relative;
-  box-shadow: 0 26px 60px rgba(var(--shadow-rgb),0.55);
+  /* the second shadow is the light catching the top edge — what makes a pane
+     read as a pane rather than a lighter rectangle */
+  box-shadow:
+    0 12px 34px rgba(var(--shadow-rgb),0.42),
+    inset 0 1px 0 rgba(var(--fg-rgb),0.16);
 }
 
 /* ============================================================
@@ -517,9 +541,9 @@ input[type="password"],
 select,
 textarea {
   width: 100%;
-  background: rgba(var(--fg-rgb),0.05);
-  border: 1px solid rgba(var(--fg-rgb),0.10);
-  border-radius: 11px;
+  background: rgba(var(--fg-rgb),0.03);
+  border: 1px solid rgba(var(--fg-rgb),0.14);
+  border-radius: 8px;
   color: var(--text);
   font-family: 'Rajdhani', sans-serif;
   font-size: 15px;
@@ -553,7 +577,7 @@ select option { background: var(--bg-input); }
   gap: 6px;
   padding: 9px 18px;
   border: 1px solid transparent;
-  border-radius: 11px;
+  border-radius: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-size: 13px;
   font-weight: 600;
@@ -627,9 +651,9 @@ select option { background: var(--bg-input); }
    ============================================================ */
 .result-box {
   margin-top: 24px;
-  background: linear-gradient(135deg, rgba(124,92,255,0.20), rgba(63,216,164,0.10));
-  border: 1px solid rgba(var(--fg-rgb),0.10);
-  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(92,110,255,0.24), rgba(140,170,255,0.10));
+  border: 1px solid rgba(var(--fg-rgb),0.14);
+  border-radius: 12px;
   padding: 26px;
   text-align: center;
   position: relative;
@@ -639,7 +663,7 @@ select option { background: var(--bg-input); }
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 50% 120%, rgba(124,92,255,0.45), transparent 70%);
+  background: radial-gradient(ellipse 70% 60% at 50% 120%, rgba(92,110,255,0.5), transparent 70%);
   pointer-events: none;
 }
 .result-label {
@@ -656,7 +680,7 @@ select option { background: var(--bg-input); }
   font-weight: 700;
   color: #ffffff;
   line-height: 1;
-  text-shadow: 0 0 40px rgba(124,92,255,0.6);
+  text-shadow: 0 0 40px rgba(92,110,255,0.65);
 }
 .result-input {
   background: rgba(var(--accent-rgb),0.06) !important;
@@ -1051,13 +1075,16 @@ input[type="range"]::-moz-range-thumb {
 
 /* Summary section */
 .summary-section {
-  background: rgba(var(--fg-rgb),0.045);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(var(--fg-rgb),0.09);
-  border-radius: 20px;
+  background: rgba(var(--fg-rgb),0.028);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border: 1px solid rgba(var(--fg-rgb),0.14);
+  border-radius: 12px;
   padding: 24px;
   position: relative;
+  box-shadow:
+    0 12px 34px rgba(var(--shadow-rgb),0.42),
+    inset 0 1px 0 rgba(var(--fg-rgb),0.16);
 }
 
 .summary-head {
@@ -1567,10 +1594,13 @@ input[type="range"]::-moz-range-thumb {
 /* ============================================================
    ATLAS SELECTOR
    ============================================================ */
+/* The tree fills the window under the bar. Its own height is written here
+   rather than in the bar's media block, which the cascade would let this
+   section overrule anyway. */
 .atlas-shell {
   position: relative;
   display: flex;
-  height: 100vh;
+  height: calc(100vh - var(--bar-h));
   overflow: hidden;
 }
 
@@ -1585,6 +1615,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .atlas-canvas:active { cursor: grabbing; }
 
+/* the one panel that is glass over the tree rather than over the ground */
 .atlas-panel {
   flex: 0 0 320px;
   display: flex;
@@ -1592,8 +1623,13 @@ input[type="range"]::-moz-range-thumb {
   gap: 12px;
   padding: 16px;
   overflow: hidden;
-  background: var(--bg-sidebar);
-  border-left: 1px solid var(--border);
+  background: rgba(var(--fg-rgb),0.028);
+  /* the same 7px as every other pane — heavier blur would wipe the grid behind
+     it and the panel would go back to reading as a flat fill */
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border-left: 1px solid rgba(var(--fg-rgb),0.14);
+  box-shadow: inset 1px 0 0 rgba(var(--fg-rgb),0.08);
 }
 /* Only the tab's own contents scroll, so the point count, the tabs and Reset
    stay where you left them however long a summary gets. */
