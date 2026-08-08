@@ -53,6 +53,29 @@ export class Renderer {
   width = 0;
   height = 0;
 
+  /**
+   * How much of the canvas's right edge lies under the side panel.
+   *
+   * The canvas runs the full width of the shell so the tree keeps drawing
+   * behind the panel — that blurred tree is what the glass is made of. The
+   * camera, though, should still centre on what you can actually see, so every
+   * screen calculation below works from the middle of the *free* area rather
+   * than the middle of the canvas. Nodes under the panel are drawn but cannot
+   * be clicked; pan them out to reach them.
+   */
+  private insetRight = 0;
+
+  private get centreX(): number {
+    return (this.width - this.insetRight) / 2;
+  }
+  private get centreY(): number {
+    return this.height / 2;
+  }
+
+  setInset(right: number): void {
+    this.insetRight = Math.max(0, Math.min(right, this.width));
+  }
+
   constructor(
     private canvas: HTMLCanvasElement,
     private tree: Tree,
@@ -75,7 +98,8 @@ export class Renderer {
 
   fit(): void {
     const b = this.tree.bounds;
-    const scale = Math.min(this.width / (b.maxX - b.minX), this.height / (b.maxY - b.minY)) * 0.95;
+    const free = this.width - this.insetRight;
+    const scale = Math.min(free / (b.maxX - b.minX), this.height / (b.maxY - b.minY)) * 0.95;
     this.camera.scale = scale;
     this.camera.x = (b.minX + b.maxX) / 2;
     this.camera.y = (b.minY + b.maxY) / 2;
@@ -83,15 +107,15 @@ export class Renderer {
 
   screenToTree(sx: number, sy: number): { x: number; y: number } {
     return {
-      x: (sx - this.width / 2) / this.camera.scale + this.camera.x,
-      y: (sy - this.height / 2) / this.camera.scale + this.camera.y,
+      x: (sx - this.centreX) / this.camera.scale + this.camera.x,
+      y: (sy - this.centreY) / this.camera.scale + this.camera.y,
     };
   }
 
   treeToScreen(x: number, y: number): { x: number; y: number } {
     return {
-      x: (x - this.camera.x) * this.camera.scale + this.width / 2,
-      y: (y - this.camera.y) * this.camera.scale + this.height / 2,
+      x: (x - this.camera.x) * this.camera.scale + this.centreX,
+      y: (y - this.camera.y) * this.camera.scale + this.centreY,
     };
   }
 
@@ -142,15 +166,17 @@ export class Renderer {
     ctx.fillRect(0, 0, this.width, this.height);
 
     ctx.save();
-    ctx.translate(this.width / 2, this.height / 2);
+    ctx.translate(this.centreX, this.centreY);
     ctx.scale(camera.scale, camera.scale);
     ctx.translate(-camera.x, -camera.y);
 
+    // culling still covers the whole canvas, panel-covered part included: it is
+    // drawn, just seen through glass
     const view = {
-      minX: camera.x - this.width / 2 / camera.scale,
-      maxX: camera.x + this.width / 2 / camera.scale,
-      minY: camera.y - this.height / 2 / camera.scale,
-      maxY: camera.y + this.height / 2 / camera.scale,
+      minX: camera.x - this.centreX / camera.scale,
+      maxX: camera.x + (this.width - this.centreX) / camera.scale,
+      minY: camera.y - this.centreY / camera.scale,
+      maxY: camera.y + (this.height - this.centreY) / camera.scale,
     };
 
     this.drawBackground(view);
@@ -173,10 +199,20 @@ export class Renderer {
       ctx.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
       ctx.restore();
     }
-    const root = this.tree.nodes[this.tree.rootIdx];
+    // Centred on the tree itself, not on the root node: the root is the Atlas
+    // centre by meaning, but it sits well below the middle of the layout, which
+    // dragged the whole painting down with it.
+    const b = this.tree.bounds;
     ctx.save();
     ctx.globalAlpha = 0.75;
-    this.sprites.draw(ctx, 'atlasBackground', 'AtlasPassiveBackground', root.x, root.y, 2.6);
+    this.sprites.draw(
+      ctx,
+      'atlasBackground',
+      'AtlasPassiveBackground',
+      (b.minX + b.maxX) / 2,
+      (b.minY + b.maxY) / 2,
+      2.6,
+    );
     ctx.restore();
   }
 

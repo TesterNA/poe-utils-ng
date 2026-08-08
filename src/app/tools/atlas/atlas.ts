@@ -305,6 +305,7 @@ export class Atlas {
       this.basePoints.set(this.tree.totalPoints);
 
       this.renderer = new Renderer(canvas, this.tree, sprites);
+      this.applyPanelInset(canvas);
       this.renderer.fit();
       this.exposeDebugHandle();
       this.builds.set(this.recountBuilds(loadBuilds()));
@@ -329,6 +330,7 @@ export class Atlas {
 
       const observer = new ResizeObserver(() => {
         this.renderer?.resize();
+        this.applyPanelInset(canvas);
         this.dirty = true;
       });
       observer.observe(canvas);
@@ -433,6 +435,21 @@ export class Atlas {
     }
     this.frame = requestAnimationFrame(this.loop);
   };
+
+  /**
+   * How much of the canvas the side panel covers, straight from the stylesheet.
+   *
+   * The panel only floats over the tree on a desktop; below the breakpoint it
+   * sits under it in a column and covers nothing. That decision belongs to CSS,
+   * so `--panel-inset` on the shell is the one place it is written down and
+   * this just reads it back.
+   */
+  private applyPanelInset(canvas: HTMLCanvasElement): void {
+    const shell = canvas.closest('.atlas-shell');
+    if (!shell) return;
+    const raw = getComputedStyle(shell).getPropertyValue('--panel-inset');
+    this.renderer?.setInset(Number.parseFloat(raw) || 0);
+  }
 
   // ------------------------------------------------------------ persistence --
 

@@ -1602,6 +1602,9 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   height: calc(100vh - var(--bar-h));
   overflow: hidden;
+  /* how much of the canvas the panel floats over, read back by the renderer to
+     place the camera; 0 while the panel sits below the tree instead */
+  --panel-inset: 0px;
 }
 
 .atlas-canvas {
@@ -1630,6 +1633,28 @@ input[type="range"]::-moz-range-thumb {
   -webkit-backdrop-filter: blur(7px);
   border-left: 1px solid rgba(var(--fg-rgb),0.14);
   box-shadow: inset 1px 0 0 rgba(var(--fg-rgb),0.08);
+}
+
+/* On a desktop the canvas runs the full width and the panel floats over its
+   right edge, so what stands behind the glass is the tree itself rather than
+   the page. The camera compensates through --panel-inset; nodes under the
+   panel are drawn but not clickable, which is what panning is for. */
+@media (min-width: 769px) {
+  .atlas-shell { --panel-inset: 320px; }
+  .atlas-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .atlas-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--panel-inset);
+    z-index: 2;
+  }
 }
 /* Only the tab's own contents scroll, so the point count, the tabs and Reset
    stay where you left them however long a summary gets. */
