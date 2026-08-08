@@ -1,13 +1,6 @@
 <aside class="sidebar" [class.open]="sidebarOpen()">
   <div class="sidebar-logo">
-    <div class="sidebar-pip"></div>
     <span class="sidebar-title">POE TOOLS</span>
-    <div class="sidebar-pip"></div>
-  </div>
-  <div class="sidebar-divider">
-    <div class="sidebar-divider-line"></div>
-    <div class="sidebar-diamond"></div>
-    <div class="sidebar-divider-line"></div>
   </div>
   <nav class="sidebar-nav">
     @for (tool of tools; track tool.id) {
