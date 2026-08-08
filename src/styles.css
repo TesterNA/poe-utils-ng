@@ -148,6 +148,35 @@ body::before {
 .sidebar-footer {
   padding: 20px;
 }
+/* The account link, which sits below the tools because it is not one. */
+.sidebar-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  margin-bottom: 14px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.sidebar-account:hover {
+  color: var(--text);
+  background: rgba(200,168,75,0.06);
+  border-color: var(--border);
+}
+.sidebar-account.active { color: var(--accent); border-color: var(--accent-dim); }
+.sidebar-account .nav-icon { width: 16px; height: 16px; }
+/* An address is long and the sidebar is not; one line, cut at the end. */
+.sidebar-account span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .sidebar-footer-gems {
   display: flex;
   justify-content: center;
@@ -353,6 +382,8 @@ body::before {
 
 input[type="number"],
 input[type="text"],
+input[type="email"],
+input[type="password"],
 select,
 textarea {
   width: 100%;
@@ -372,6 +403,8 @@ input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 input[type="number"]:focus,
 input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--border-glow);
@@ -1520,6 +1553,12 @@ input[type="range"]::-moz-range-thumb {
   padding: 0;
   overflow-y: auto;
   list-style: none;
+  /* These sit in a scrolling flex column. Their own `overflow-y` sets their
+     automatic minimum size to zero, so once the panel is taller than its box the
+     flex algorithm is free to shrink them away entirely — the list keeps its
+     entries, scrolled inside a box of no height, and nothing can be clicked.
+     Refusing to shrink makes the panel scroll instead, which is what it is for. */
+  flex-shrink: 0;
 }
 
 .atlas-target {
@@ -1683,7 +1722,8 @@ input[type="range"]::-moz-range-thumb {
   gap: 8px;
 }
 .atlas-link-btn,
-.strat-link-btn {
+.strat-link-btn,
+.account-toggle {
   padding: 0;
   border: none;
   background: none;
@@ -1695,7 +1735,8 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 .atlas-link-btn:hover,
-.strat-link-btn:hover { color: var(--accent); }
+.strat-link-btn:hover,
+.account-toggle:hover { color: var(--accent); }
 .atlas-target.atlas-blocked {
   border-left-color: #c2413f;
   color: var(--text-dim);
@@ -2426,4 +2467,28 @@ a.strat-link-btn { text-decoration: none; }
   .strat-grid { grid-template-columns: minmax(0, 1fr); }
   .strat-col:last-child { position: static; }
   .strat-picker { max-height: 60vh; }
+}
+
+/* ============================================================
+   ACCOUNT
+   ============================================================ */
+.account-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.account-error {
+  margin: 0 0 12px;
+  padding: 8px 11px;
+  border-left: 2px solid #c2413f;
+  background: rgba(184,64,64,0.08);
+  font-size: 13px;
+  color: var(--text);
+}
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }

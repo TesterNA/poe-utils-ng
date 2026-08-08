@@ -30,6 +30,17 @@
     }
   </nav>
   <div class="sidebar-footer">
+    <!-- Held back until the session check answers, so a link that turns out to
+         have no backend behind it is never shown and then taken away. -->
+    @if (auth.ready() && auth.available()) {
+      <a class="sidebar-account" routerLink="/account" routerLinkActive="active" (click)="closeSidebar()">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+        </svg>
+        <span>{{ auth.user()?.email ?? 'Sign in' }}</span>
+      </a>
+    }
     <div class="sidebar-footer-gems">
       <div class="footer-gem gem-red"></div>
       <div class="footer-gem gem-green"></div>

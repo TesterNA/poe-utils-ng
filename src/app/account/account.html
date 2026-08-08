@@ -1,0 +1,78 @@
+<poe-tool-page
+  heading="Account"
+  subtitle="Carry your saved builds and strategies between browsers"
+  [pips]="[true, false, true]"
+>
+  <poe-card maxWidth="480px">
+    @if (!auth.ready()) {
+      <p class="tool-intro">Checking…</p>
+    } @else if (!auth.available()) {
+      <p class="tool-intro">
+        Accounts need the site's server, which is not running here. Every tool still works —
+        your builds and strategies are saved in this browser, and <em>copy all</em> in either
+        library exports them.
+      </p>
+    } @else if (auth.user(); as user) {
+      <div class="section-label">Signed in</div>
+      <p class="tool-intro">
+        <strong>{{ user.email }}</strong><br />
+        Saved atlas builds and strategies are kept in step with this account. Open a tool on
+        another browser, sign in there, and its library will fill in.
+      </p>
+      @if (sync.message()) {
+        <p class="account-note">{{ sync.message() }}</p>
+      }
+      <button class="poe-btn poe-btn-dim" [disabled]="busy()" (click)="signOut()">Sign out</button>
+    } @else {
+      <p class="tool-intro">
+        An account only carries your libraries. Every tool works signed out, on whatever this
+        browser has saved — this is for when that is not enough.
+      </p>
+
+      <form (ngSubmit)="submit()">
+        <div class="poe-field">
+          <label class="poe-field-label" for="account-email">Email</label>
+          <input
+            id="account-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+          />
+        </div>
+        <div class="poe-field">
+          <label class="poe-field-label" for="account-password">Password</label>
+          <input
+            id="account-password"
+            name="password"
+            type="password"
+            [autocomplete]="creating() ? 'new-password' : 'current-password'"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+          />
+          @if (creating()) {
+            <p class="account-note">At least 8 characters. Nothing is ever sent to the address.</p>
+          }
+        </div>
+
+        @if (error()) {
+          <p class="account-error">{{ error() }}</p>
+        }
+
+        <div class="account-actions">
+          <button
+            class="poe-btn poe-btn-primary"
+            type="submit"
+            [disabled]="busy() || !email().trim() || !password()"
+          >
+            {{ action() }}
+          </button>
+          <button type="button" class="account-toggle" (click)="toggleMode()">
+            {{ creating() ? 'I already have an account' : 'Create one instead' }}
+          </button>
+        </div>
+      </form>
+    }
+  </poe-card>
+</poe-tool-page>

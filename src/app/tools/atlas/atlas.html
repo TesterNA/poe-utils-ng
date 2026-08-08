@@ -186,6 +186,16 @@
       <button class="poe-btn poe-btn-dim" [disabled]="!shareCode()" (click)="copyLink()">
         Copy link
       </button>
+      @if (auth.available()) {
+        <button
+          class="poe-btn poe-btn-dim"
+          title="A short link, kept on the server"
+          [disabled]="!shareCode() || shortening()"
+          (click)="copyShortLink()"
+        >
+          Short link
+        </button>
+      }
     </div>
     <div class="atlas-btn-row">
       <input
@@ -211,6 +221,11 @@
         <button type="button" class="atlas-link-btn" (click)="exportBuilds()">copy all</button>
       }
     </div>
+    @if (auth.user()) {
+      <p class="atlas-hint">
+        {{ sync.busy() ? 'Syncing…' : sync.message() || 'Synced with ' + auth.user()!.email }}
+      </p>
+    }
     <div class="atlas-btn-row">
       <input
         class="atlas-search"

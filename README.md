@@ -254,6 +254,8 @@ Which is why "copy all" exists: local storage is per browser and per device, so 
 way out that does not depend on it. It produces one `name<TAB>code` line per build, and pasting that
 back into the import box merges it in — the same box takes a single code, told apart by the tab.
 
+Signing in is the other way out — see [Accounts and sync](#accounts-and-sync).
+
 ### Adding a tree for a new league
 
 Tree data and sprite sheets come from GGG's official export,
@@ -343,3 +345,90 @@ atlas one does.
 `npm run test:strategy` covers the format round trip (including an embedded older atlas code, notes
 with an emoji, and item codes past one varint byte), the three rules, the version arithmetic, and
 the shipped data itself: distinct codes, distinct ids, every named icon actually present.
+
+## Accounts and sync
+
+Everything above works signed out, on whatever the browser has saved. An account exists for one
+reason: to carry the two libraries — atlas builds and strategies — between browsers.
+
+Email and a password, no confirmation step. Nothing is ever sent to the address, so it is really
+just a unique name and a way back into your library; a confirmation gate in front of a tool that
+saves atlas trees would cost more than it buys. Passwords are scrypt (`N=16384, r=8, p=1`) and the
+session is an HMAC-SHA256 signed cookie — `httpOnly`, `Secure`, `SameSite=Lax`, 30 days. Both are
+twenty lines of `node:crypto` rather than a dependency: a JWT reduces to the same thing once you
+drop the algorithm negotiation that has caused most of the JWT footguns, and the session is a signed
+statement rather than a database row, so checking who you are costs no read.
+
+### What travels
+
+The same `{ name, code }` the browser already stores. A share code *is* the build — the atlas one
+packs a 132 node tree into about 55 characters — so there is nothing else to send, and a whole
+library is a few kilobytes in one document per account rather than a document per build.
+
+The merge lives on the server only (`api/_lib/merge.ts`). A device posts what it has and adopts the
+answer; two implementations of a merge would be two chances to disagree about the same pair of
+libraries, and the disagreement shows up as a build that reappears after you delete it. The rules:
+
+- an entry is identified by its `id`, and the later `savedAt` wins;
+- **deletes need tombstones.** Absence cannot mean deletion, because the other device may simply
+  never have heard of the entry. So a delete records `id -> when`, and an entry is dropped when a
+  tombstone is at or after its `savedAt`. Saving again under a name you deleted elsewhere is a new
+  save and wins, which is why the comparison is on time rather than on presence;
+- the same name saved separately on two devices collapses to the newer, matching what saving over a
+  name means everywhere else in the app.
+
+A device that last synced with a different account takes the server's copy instead of pushing, so
+signing in as someone else on a shared browser does not merge one person's library into another's.
+
+Locally, a change made while a sync is in the air makes the client throw that answer away and go
+round again. The answer describes a library that no longer exists here, and applying it would undo
+the change — most visibly a delete, whose tombstone was written after the request left. The server
+has already merged what it was sent, so nothing is lost by asking again.
+
+`npm run test:sync` covers all of it, plus the password and token checks — those fail *open* when
+they break, and nothing on screen would look wrong.
+
+### Short links
+
+Both tools have a "Short link" button beside "Copy link". The long link carries the whole plan in
+its query string, which is the right default: it needs no server and it cannot rot. It is also 200
+characters that some places wrap, truncate or refuse.
+
+A link stores the code and nothing else — the origin and the path are identical in every row, so the
+browser puts them back. At that size the code is not what costs anything: a row is ~60 bytes of
+payload under ~250 bytes of Mongo overhead, which is why the fields are one letter each and the slug
+doubles as the `_id` instead of sitting beside one. The bigger saving is not storing the same plan
+twice — the code is hashed and the hash is unique, so sharing one tree from three devices makes one
+row and pressing the button twice gives back the same link.
+
+Slugs are eight characters from a 31 symbol alphabet with no vowels and no look-alikes; a slug gets
+read aloud and typed by hand, and `l` against `1` is the one mistake worth designing out.
+
+Anyone can make one. A link nobody can make without an account is a link most people will not make.
+What signing in changes is how long it lasts: an anonymous link expires 180 days after it was last
+opened, kept alive by a TTL index that opening the link pushes forward, while one made by an account
+has no expiry at all. That is the only thing stopping the collection growing forever.
+
+## Deploying
+
+Vercel. The Angular build is static and the `api/` directory becomes functions beside it;
+`vercel.json` pins the output directory and rewrites everything that is not `/api/…` to
+`index.html`, so client-side routes survive a refresh.
+
+`api/tsconfig.json` exists because the root one is Angular's — it targets the browser and uses
+project references, which Vercel's TypeScript support does not read. TypeScript picks the nearest
+config walking up from each file, so the two never meet. Files under `api/_lib/` are shared code,
+not routes: Vercel does not turn an underscore-prefixed path into an endpoint.
+
+Three environment variables, set in the Vercel dashboard and never in the repo:
+
+| Variable         | What it is                                                              |
+| ---------------- | ----------------------------------------------------------------------- |
+| `MONGODB_URI`    | Atlas connection string. Network Access must allow `0.0.0.0/0` — Vercel has no fixed egress addresses. |
+| `SESSION_SECRET` | At least 32 characters of randomness. Changing it signs everyone out.    |
+| `MONGODB_DB`     | Optional; the database name, `poe_utils` if unset.                       |
+
+Indexes are created on the first cold start rather than by a migration: `createIndex` is idempotent,
+so it costs one round trip per process and there is nothing to remember to run. The Mongo client is
+cached on `globalThis` as a *promise*, so two concurrent cold requests share one connect instead of
+racing to open two — serverless makes connection pooling a hazard, and an M0 cluster allows 500.

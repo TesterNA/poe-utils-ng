@@ -9,9 +9,20 @@
    Everything the game would refuse is checked as you build: five slots in the
    device, each item's own limit, and Unwavering Vision — which shuts the
    fragment slots altogether, so a tree that takes it cannot use any of this. */
-import { afterNextRender, Component, computed, effect, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Auth } from '../../shared/auth';
 import { PoeCard } from '../../shared/poe-card';
+import { shorten } from '../../shared/short-link';
+import { LibrarySync } from '../../shared/sync';
 import { ToolPage } from '../../shared/tool-page';
 import { loadBuilds, type SavedBuild } from '../atlas/atlas-builds';
 import { peekPlan, ShareCodeError } from '../atlas/share-code';
@@ -96,6 +107,12 @@ export class Strategy {
   readonly shareMessage = signal('');
   readonly name = signal('');
   readonly library = signal<SavedStrategy[]>([]);
+  /** A short link is a round trip, so the button has to be able to say so. */
+  readonly shortening = signal(false);
+
+  /** Public because the template hides the short link button without a backend. */
+  readonly auth = inject(Auth);
+  readonly sync = inject(LibrarySync);
 
   readonly gameVersion = computed(() => gameVersionOf(this.plan()));
   readonly used = computed(() => slotsUsed(this.picks()));
@@ -192,6 +209,25 @@ export class Strategy {
       const code = this.shareCode();
       if (this.started) storeState(code);
     });
+
+    // Signed out this does nothing at all; signed in it reconciles the library
+    // with the account's and writes back whatever the merge decided.
+    this.sync.attach('strategy', {
+      read: () => this.library(),
+      write: (entries) => {
+        const merged = entries.map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          code: entry.code,
+          slots: entry.slots ?? 0,
+          points: entry.points ?? 0,
+          savedAt: entry.savedAt,
+        }));
+        storeLibrary(merged);
+        this.library.set(merged);
+      },
+    });
+    inject(DestroyRef).onDestroy(() => this.sync.detach('strategy'));
   }
 
   private async init(): Promise<void> {
@@ -384,6 +420,25 @@ export class Strategy {
     await this.copyText(this.shareLink(), 'Link copied.');
   }
 
+  /**
+   * The same strategy behind an eight character slug. A strategy code carries a
+   * tree, five scarab picks and a note, so the long link is the one that gets
+   * wrapped or truncated by whatever it is pasted into.
+   */
+  async copyShortLink(): Promise<void> {
+    const code = this.shareCode();
+    if (!code || this.shortening()) return;
+    this.shortening.set(true);
+    this.shareMessage.set('Making a link…');
+    try {
+      await this.copyText(await shorten('strategy', code), 'Short link copied.');
+    } catch (err) {
+      this.shareMessage.set(err instanceof Error ? err.message : 'Could not make a link.');
+    } finally {
+      this.shortening.set(false);
+    }
+  }
+
   private async copyText(text: string, done: string): Promise<void> {
     if (!text) return;
     try {
@@ -489,6 +544,7 @@ export class Strategy {
     }
     this.library.set(next);
     this.name.set('');
+    this.sync.schedule();
     this.shareMessage.set(`Saved "${name}".`);
   }
 
@@ -503,6 +559,9 @@ export class Strategy {
       return;
     }
     this.library.set(next);
+    // A tombstone, not just an absence: without it the next sync from a device
+    // that still holds this strategy would put it straight back.
+    this.sync.forget(entry.id);
   }
 
   async exportLibrary(): Promise<void> {
@@ -519,6 +578,7 @@ export class Strategy {
     }
     this.library.set(merged);
     this.importText.set('');
+    this.sync.schedule();
     this.shareMessage.set(`Library now has ${merged.length} strategies.`);
   }
 }

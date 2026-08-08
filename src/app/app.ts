@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Auth } from './shared/auth';
 import { TOOLS, type ToolDef } from './tools';
 
 @Component({
@@ -14,6 +15,13 @@ export class App {
 
   readonly tools = TOOLS.filter((tool) => !tool.hidden);
   readonly sidebarOpen = signal(false);
+  readonly auth = inject(Auth);
+
+  constructor() {
+    // One signature check on the session cookie, at startup, so every tool
+    // already knows whether there is an account behind it.
+    void this.auth.load();
+  }
 
   /** Icon markup comes from our own tools.ts literals, never from user input. */
   icon(tool: ToolDef): SafeHtml {

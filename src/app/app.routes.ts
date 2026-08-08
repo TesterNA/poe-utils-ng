@@ -57,5 +57,17 @@ export const routes: Routes = [
     title: 'Minesweeper · PoE Tools',
     loadComponent: () => import('./tools/minesweeper/minesweeper').then((m) => m.Minesweeper),
   },
+  {
+    // not a tool, so it is not in TOOLS — reached from the sidebar footer
+    path: 'account',
+    title: 'Account · PoE Tools',
+    loadComponent: () => import('./account/account').then((m) => m.Account),
+  },
+  {
+    // the short-link landing: swaps the slug for a code and forwards
+    path: 's/:slug',
+    title: 'Opening link · PoE Tools',
+    loadComponent: () => import('./shared/open-link').then((m) => m.OpenLink),
+  },
   { path: '**', redirectTo: 'defense' },
 ];

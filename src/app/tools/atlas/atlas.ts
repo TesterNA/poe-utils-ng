@@ -39,6 +39,9 @@ import {
   TREE_VERSIONS,
   type AtlasTreeVersion,
 } from './tree-versions';
+import { Auth } from '../../shared/auth';
+import { shorten } from '../../shared/short-link';
+import { LibrarySync } from '../../shared/sync';
 import { bfs, connectedWithin, walkBack, withoutBlocked, type Graph } from './graph';
 import { Renderer, type RenderState } from './renderer';
 import { SpriteAtlas } from './sprites';
@@ -121,6 +124,9 @@ export class Atlas {
   private readonly zone = inject(NgZone);
   private readonly router = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
+  /** Public because the template hides the short link button without a backend. */
+  readonly auth = inject(Auth);
+  readonly sync = inject(LibrarySync);
 
   readonly mode = signal<Mode>('path');
   readonly allocatedCount = signal(0);
@@ -171,6 +177,8 @@ export class Atlas {
 
   readonly builds = signal<SavedBuild[]>([]);
   readonly buildName = signal('');
+  /** A short link is a round trip, so the button has to be able to say so. */
+  readonly shortening = signal(false);
   /** The saved build the screen currently matches, so edits are obvious. */
   readonly currentBuildId = computed(() => {
     const code = this.shareCode();
@@ -223,6 +231,27 @@ export class Atlas {
     // so all of the setup hangs off the first render rather than the constructor.
     afterNextRender(() => void this.init());
     this.destroyRef.onDestroy(() => this.teardown());
+
+    // Signed out this does nothing at all; signed in it reconciles the library
+    // with the account's and writes back whatever the merge decided.
+    this.sync.attach('atlas', {
+      read: () => this.builds(),
+      write: (entries) => {
+        const merged = this.recountBuilds(
+          entries.map((entry) => ({
+            id: entry.id,
+            name: entry.name,
+            code: entry.code,
+            points: entry.points ?? 0,
+            treeVersion: entry.treeVersion ?? 0,
+            savedAt: entry.savedAt,
+          })),
+        );
+        storeBuilds(merged);
+        this.builds.set(merged);
+      },
+    });
+    this.destroyRef.onDestroy(() => this.sync.detach('atlas'));
   }
 
   // ------------------------------------------------------------------ setup --
@@ -575,6 +604,26 @@ export class Atlas {
     await this.copyText(this.shareLink(), 'Link copied.');
   }
 
+  /**
+   * The same plan behind an eight character slug, for the places a 200 character
+   * link gets wrapped or truncated. The server keeps the code and nothing else,
+   * so this is the same tree either way — it just needs the site to still be
+   * there, which the long link does not.
+   */
+  async copyShortLink(): Promise<void> {
+    const code = this.shareCode();
+    if (!code || this.shortening()) return;
+    this.shortening.set(true);
+    this.shareMessage.set('Making a link…');
+    try {
+      await this.copyText(await shorten('atlas', code), 'Short link copied.');
+    } catch (err) {
+      this.shareMessage.set(err instanceof Error ? err.message : 'Could not make a link.');
+    } finally {
+      this.shortening.set(false);
+    }
+  }
+
   private async copyText(text: string, done: string): Promise<void> {
     if (!text) return;
     try {
@@ -725,6 +774,7 @@ export class Atlas {
     }
     this.builds.set(next);
     this.buildName.set('');
+    this.sync.schedule();
     this.shareMessage.set(`Saved "${name}".`);
   }
 
@@ -739,6 +789,9 @@ export class Atlas {
       return;
     }
     this.builds.set(next);
+    // A tombstone, not just an absence: without it the next sync from a device
+    // that still holds this build would put it straight back.
+    this.sync.forget(build.id);
   }
 
   /**
@@ -778,6 +831,7 @@ export class Atlas {
     }
     this.builds.set(merged);
     this.importText.set('');
+    this.sync.schedule();
     this.shareMessage.set(`Library now has ${merged.length} builds.`);
   }
 

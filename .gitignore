@@ -40,3 +40,9 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Secrets and deploy state — the connection string and the session secret live
+# in Vercel's environment variables, never in the repo
+.env
+.env.*
+.vercel

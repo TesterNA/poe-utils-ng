@@ -1,0 +1,28 @@
+/*
+ * The functions compile on their own terms.
+ *
+ * The root tsconfig is Angular's: it targets the browser, and it uses project
+ * references, which Vercel's TypeScript support does not read. TypeScript picks
+ * the nearest config walking up from each file, so this one covers everything
+ * under api/ and the app's config covers src/.
+ */
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023"],
+    /* Request, Response and Headers are globals here, from @types/node. */
+    "types": ["node"],
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}
