@@ -73,9 +73,33 @@
               <div class="strat-tree-head">
                 <span class="strat-tree-points">{{ tree.points }} points</span>
                 <span class="strat-tree-version">tree {{ gameVersion() }}</span>
-                <a class="strat-link-btn" routerLink="/atlas" [queryParams]="atlasParams()"
-                  >open in Atlas Selector</a
+                <a
+                  class="poe-btn strat-open-atlas"
+                  routerLink="/atlas"
+                  [queryParams]="atlasParams()"
+                  title="Opens this tree in the Atlas Selector"
                 >
+                  <!-- The link used to be one line of small grey text and was
+                       routinely missed; the arrow-out-of-a-box is the usual sign
+                       for "this opens somewhere else". -->
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M14 4h6v6M20 4l-8.5 8.5"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M18 14.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3.5"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Open in Atlas
+                </a>
               </div>
               @if (tree.keystones.length) {
                 <ul class="strat-keystones">

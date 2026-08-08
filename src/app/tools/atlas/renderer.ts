@@ -23,6 +23,12 @@ export interface RenderState {
    * what is allocated.
    */
   highlight: Set<number>;
+  /**
+   * What the search box matches. Its own colour rather than the highlight's:
+   * a search and a called-out mechanic are often up at the same time, and the
+   * point of the search is to tell its hits apart from everything else.
+   */
+  matched: Set<number>;
   hovered: number | null;
   mode: 'path' | 'targets';
 }
@@ -36,6 +42,7 @@ const COLORS = {
   excluded: '#c2413f',
   hover: '#ffffff',
   highlight: '#7ce89a',
+  matched: '#ff7ae0',
 };
 
 export class Renderer {
@@ -274,14 +281,14 @@ export class Renderer {
 
       if (node.kind === 'mastery') {
         const lit = state.highlight.has(node.idx);
+        const hit = state.matched.has(node.idx);
         // A cluster centre stays visible when its mechanic is called out, even
         // zoomed far enough out that the icons are normally dropped — finding
         // the other clusters is the whole point of lighting them up.
-        if (detailed || lit) this.sprites.draw(ctx, 'mastery', node.icon, node.x, node.y);
-        if (lit) {
-          beacon(ctx, node, COLORS.highlight);
-          if (state.hovered === node.idx) ring(ctx, node, COLORS.hover, 8, 1.16);
-        }
+        if (detailed || lit || hit) this.sprites.draw(ctx, 'mastery', node.icon, node.x, node.y);
+        if (hit) beacon(ctx, node, COLORS.matched);
+        if (lit) beacon(ctx, node, COLORS.highlight);
+        if ((lit || hit) && state.hovered === node.idx) ring(ctx, node, COLORS.hover, 8, 1.16);
         continue;
       }
       // Nothing is drawn for a structural junction; the lines through it are
@@ -316,6 +323,8 @@ export class Renderer {
       if (frameKey) this.sprites.draw(ctx, 'frame', frameKey, node.x, node.y);
 
       if (excluded) ctx.restore();
+
+      if (state.matched.has(node.idx)) found(ctx, node, COLORS.matched, this.camera.scale);
 
       if (state.highlight.has(node.idx)) ring(ctx, node, COLORS.highlight, 9, 1.2);
 
@@ -395,6 +404,34 @@ function beacon(ctx: CanvasRenderingContext2D, node: TreeNode, color: string): v
   ctx.fill();
   ctx.restore();
   ring(ctx, node, color, 12, 1.35);
+}
+
+/**
+ * A search hit. Everything here is drawn in tree units, and zoomed out to the
+ * whole atlas a passive is four pixels across — so the mark has a floor in
+ * screen space: big enough to spot from the far side of the tree, no wider than
+ * the node once you have panned in.
+ */
+function found(
+  ctx: CanvasRenderingContext2D,
+  node: TreeNode,
+  color: string,
+  scale: number,
+): void {
+  const r = Math.max(node.radius * 1.35, 12 / scale);
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(8, 2.5 / scale);
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function ring(

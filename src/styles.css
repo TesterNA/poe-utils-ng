@@ -29,6 +29,42 @@ html, body {
   height: 100%;
 }
 
+/* ============================================================
+   SCROLLBARS
+   ------------------------------------------------------------
+   Windows draws wide, light, boxy scrollbars that sit badly on every dark panel
+   in here. These are the narrow rounded ones instead: a thumb with no track and
+   no buttons, dim until you point at it.
+
+   Both spellings are written on purpose. Chromium 121+ and Firefox honour the
+   standard properties and ignore the -webkit- pseudo-elements the moment
+   `scrollbar-width` is set, so the pseudo-elements are only ever used by older
+   engines — which is exactly the fallback we want.
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  /* The transparent border is what keeps the thumb clear of the edge; without
+     background-clip it would be painted over. */
+  background: rgba(150,160,195,0.26);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(200,168,75,0.5);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner { background: transparent; }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150,160,195,0.3) transparent;
+}
+/* Hovering the scrolling box, not the bar itself: the standard properties have
+   no thumb selector, so this is as close as the effect gets. */
+*:hover { scrollbar-color: rgba(160,172,205,0.42) transparent; }
+
 body {
   font-family: 'Rajdhani', 'Segoe UI', sans-serif;
   background: var(--bg-deep);
@@ -2237,6 +2273,15 @@ a.strat-link-btn { text-decoration: none; }
 .strat-btn-row input { flex: 1; min-width: 0; }
 .strat-btn-row .poe-btn { flex: 0 0 auto; justify-content: center; }
 
+/* The library sits straight under the name field, and the atlas panel's shared
+   rules carry no margin of their own — without this the first saved entry looks
+   like part of the input row. */
+.strat-saved-list {
+  margin-top: 12px;
+  padding-right: 2px;
+}
+.strat-saved-list + .strat-btn-row { margin-top: 12px; }
+
 .strat-empty-note {
   padding: 10px 12px;
   border: 1px dashed var(--border);
@@ -2256,9 +2301,32 @@ a.strat-link-btn { text-decoration: none; }
 }
 .strat-tree-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+/* The way out to the Atlas Selector. Lit rather than dim: it is the one thing
+   on this card you are meant to click. */
+.strat-open-atlas {
+  padding: 8px 14px;
+  border-color: var(--accent);
+  border-radius: 3px;
+  background: rgba(200,168,75,0.18);
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: none;
+  box-shadow: 0 0 14px rgba(200,168,75,0.18);
+}
+.strat-open-atlas:hover {
+  background: rgba(200,168,75,0.32);
+  color: #f0d78a;
+  box-shadow: 0 0 18px rgba(200,168,75,0.3);
+}
+.strat-open-atlas svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 .strat-tree-points {
   font-family: 'Cinzel', serif;

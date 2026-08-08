@@ -147,6 +147,15 @@
       />
     </div>
     @if (searchHits().length) {
+      <div class="atlas-list-head">
+        <div class="section-label">Matches ({{ searchTotal() }})</div>
+        <button type="button" class="atlas-link-btn" (click)="clearSearch()">clear</button>
+      </div>
+      @if (searchTotal() > searchHits().length) {
+        <p class="atlas-hint atlas-share-hint">
+          Every match is ringed on the tree; the closest {{ searchHits().length }} are listed.
+        </p>
+      }
       <ul class="atlas-hits">
         @for (hit of searchHits(); track hit.idx) {
           <li class="atlas-hit" [class]="'kind-' + hit.kind" (mouseenter)="highlight(hit.idx)" (click)="pickSearchHit(hit.idx)">

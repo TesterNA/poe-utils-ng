@@ -117,6 +117,10 @@ const EMPTY_SUMMARY: Summary = {
 @Component({
   selector: 'poe-atlas',
   templateUrl: './atlas.html',
+  // Escape is the way out of a pinned mechanic or a search, whichever the
+  // keyboard happens to be pointed at — bound on the document because the
+  // canvas is not focusable and the panel's inputs would swallow it.
+  host: { '(document:keydown.escape)': 'onEscape()' },
 })
 export class Atlas {
   private readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
@@ -150,6 +154,8 @@ export class Atlas {
   readonly loading = signal('Loading atlas tree...');
   readonly query = signal('');
   readonly searchHits = signal<SearchHit[]>([]);
+  /** Everything the query matches, including what the list is too short to show. */
+  readonly searchTotal = signal(0);
   readonly tooltip = signal<TooltipView | null>(null);
 
   readonly treeVersions: readonly AtlasTreeVersion[] = TREE_VERSIONS;
@@ -205,6 +211,8 @@ export class Atlas {
   private preview = new Set<number>();
   /** Nodes called out from the panel — a mechanic, or one summary line. */
   private highlighted = new Set<number>();
+  /** What the search box matches, marked on the tree in its own colour. */
+  private matched = new Set<number>();
   /** Mechanic under the pointer right now, which outranks the pinned one. */
   private hoverFocus: string | null = null;
   /** The nodes behind one summary line, while it is hovered. */
@@ -418,6 +426,7 @@ export class Atlas {
         route: this.mode() === 'targets' ? this.route : new Set<number>(),
         preview: this.preview,
         highlight: this.highlighted,
+        matched: this.matched,
         hovered: this.hovered,
         mode: this.mode(),
       };
@@ -1168,6 +1177,27 @@ export class Atlas {
     this.applyHighlight();
   }
 
+  /**
+   * Every ordinary way of saying "enough": Escape, a click on empty canvas, or a
+   * click on any node. Pinning used to be undone only by finding the same
+   * cluster centre again and clicking it a second time, which meant a mechanic
+   * you had panned away from stayed lit for the rest of the session.
+   */
+  clearFocus(): void {
+    if (!this.focusedMechanic()) return;
+    this.focusedMechanic.set(null);
+    this.applyHighlight();
+  }
+
+  /** Escape puts out the pinned mechanic first, then the search. */
+  onEscape(): void {
+    if (this.focusedMechanic()) {
+      this.clearFocus();
+      return;
+    }
+    if (this.query()) this.clearSearch();
+  }
+
   hoverMechanic(name: string | null): void {
     this.hoverFocus = name;
     this.applyHighlight();
@@ -1193,20 +1223,47 @@ export class Atlas {
   }
 
   onSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+    this.applyQuery((event.target as HTMLInputElement).value);
+  }
+
+  clearSearch(): void {
+    this.applyQuery('');
+  }
+
+  /**
+   * The list is the shortlist; the tree is the answer. Every match is marked on
+   * the canvas, not just the forty the panel has room for, and a query that
+   * names a mechanic lights that mechanic's cluster centres too — so searching
+   * "delirium" points at the wheels as well as at the passives.
+   */
+  private applyQuery(value: string): void {
     this.query.set(value);
     const tree = this.tree;
     const q = value.trim().toLowerCase();
     if (!tree || q.length < 2) {
       this.searchHits.set([]);
+      this.searchTotal.set(0);
+      this.matched = new Set();
+      this.dirty = true;
       return;
     }
-    const hits = tree.nodes
-      .filter((n) => n.allocatable && n.searchText.includes(q))
-      .sort((a, b) => rank(a, q) - rank(b, q))
-      .slice(0, 40)
-      .map((n) => ({ idx: n.idx, name: n.name, kind: n.kind, stat: n.stats[0] ?? '' }));
-    this.searchHits.set(hits);
+    const found = tree.nodes.filter((n) => n.allocatable && n.searchText.includes(q));
+    this.searchHits.set(
+      found
+        .slice()
+        .sort((a, b) => rank(a, q) - rank(b, q))
+        .slice(0, 40)
+        .map((n) => ({ idx: n.idx, name: n.name, kind: n.kind, stat: n.stats[0] ?? '' })),
+    );
+    const marked = new Set(found.map((n) => n.idx));
+    // Masteries are not allocatable, so they are never in `found` — the mechanic
+    // names have to be matched separately.
+    for (const [mechanic, centres] of this.stats?.centresByMechanic ?? []) {
+      if (mechanic.toLowerCase().includes(q)) for (const idx of centres) marked.add(idx);
+    }
+    this.matched = marked;
+    this.searchTotal.set(marked.size);
+    this.dirty = true;
   }
 
   pickSearchHit(idx: number): void {
@@ -1263,6 +1320,8 @@ export class Atlas {
     const rect = this.canvasRef().nativeElement.getBoundingClientRect();
     const node = this.renderer?.pick(event.clientX - rect.left, event.clientY - rect.top);
     if (node) this.onNodeClick(node);
+    // A click that lands on nothing is the plainest "never mind" there is.
+    else this.clearFocus();
   }
 
   /** Right-click blocks or unblocks whatever is under the cursor. */
@@ -1344,7 +1403,10 @@ export class Atlas {
             : 'The only cluster for this mechanic',
         ],
         reminder: [],
-        hint: this.focusedMechanic() === node.name ? 'Click to unpin' : 'Click to keep it lit',
+        hint:
+          this.focusedMechanic() === node.name
+            ? 'Esc, or click anywhere else, to put it out'
+            : 'Click to keep it lit',
       };
     }
     let hint = '';
@@ -1378,6 +1440,8 @@ export class Atlas {
       this.pinMechanic(node.name);
       return;
     }
+    // Once you are working on a node again you are done looking at the mechanic.
+    this.clearFocus();
     if (!node.allocatable) return;
     if (this.mode() === 'targets') {
       if (this.targetSet.has(node.idx)) this.targetSet.delete(node.idx);
