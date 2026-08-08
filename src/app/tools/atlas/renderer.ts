@@ -199,29 +199,25 @@ export class Renderer {
       ctx.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
       ctx.restore();
     }
-    /* The painting goes exactly where GGG says the tree is.
+    /* Where the painting goes, measured rather than guessed.
 
-       The export carries its own box — min_x/min_y/max_x/max_y — and the art is
-       drawn for that box: 11369 x 10833 tree units against a 4096 x 3948 sprite,
-       which is the same shape to within a percent. So there is nothing to scale
-       by eye; the rectangle IS the answer, and the picture lands where every
-       other planner puts it.
+       Size comes from the export's own box: 11369 x 10833 tree units against a
+       4096 x 3948 sprite (2048 x 1974 pixels off a sheet whose zoom is 0.5) —
+       the same shape to within a percent, which is what a picture drawn for
+       this tree looks like.
 
-       (What was here before: the sprite centred on a node and multiplied by a
-       hand-set 2.6, which came in with the original port and was never derived
-       from anything. It ran about 6% small and sat off-centre.) */
+       Position does NOT come from that box. min_x/max_x are the extent of
+       *group centres*, and the groups are not symmetric: the rightmost sits at
+       5526 while the leftmost sits at -5844, so the box's middle is 159 units
+       left of the tree's own axis. The painting, meanwhile, is symmetric about
+       its own middle — measured on the file, its mirror axis is 0.507 of its
+       width — and the Atlas centre sits at x = 0. So it is centred on 0, and
+       only its height is taken from the box. */
     const { min_x, min_y, max_x, max_y } = this.tree.raw;
+    const w = max_x - min_x;
     ctx.save();
     ctx.globalAlpha = 0.75;
-    this.sprites.drawBox(
-      ctx,
-      'atlasBackground',
-      'AtlasPassiveBackground',
-      min_x,
-      min_y,
-      max_x - min_x,
-      max_y - min_y,
-    );
+    this.sprites.drawBox(ctx, 'atlasBackground', 'AtlasPassiveBackground', -w / 2, min_y, w, max_y - min_y);
     ctx.restore();
   }
 
