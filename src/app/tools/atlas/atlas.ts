@@ -42,11 +42,18 @@ import {
 import { bfs, connectedWithin, walkBack, withoutBlocked, type Graph } from './graph';
 import { Renderer, type RenderState } from './renderer';
 import { SpriteAtlas } from './sprites';
-import { atlasAssetBase, loadTree } from './tree-loader';
+import { StatIndex, summarise, type Summary } from './summary';
+import { atlasAssetBase, loadStatRules, loadTree } from './tree-loader';
 import type { SolverResponse } from './solver.worker';
 import type { Tree, TreeNode } from './tree-types';
 
 type Mode = 'path' | 'targets';
+/**
+ * Planning a tree and reading what it grants are separate jobs, and the summary
+ * of a real tree is long enough that sharing a panel with it pushed Share and
+ * Saved builds off the bottom.
+ */
+type PanelTab = 'plan' | 'summary';
 type SolveTier = 'fast' | 'full';
 
 interface NodeChip {
@@ -93,7 +100,16 @@ interface StoredState {
   allocated: string[];
   targets: string[];
   excluded: string[];
+  tab?: PanelTab;
+  closedGroups?: string[];
 }
+
+const EMPTY_SUMMARY: Summary = {
+  counts: { normal: 0, notable: 0, keystone: 0, wormhole: 0 },
+  groups: [],
+  keystones: [],
+  sourceLines: 0,
+};
 
 @Component({
   selector: 'poe-atlas',
@@ -136,6 +152,23 @@ export class Atlas {
   readonly importText = signal('');
   readonly shareMessage = signal('');
 
+  /**
+   * What the tree on screen actually grants, added up per mechanic. Recomputed
+   * whenever the allocation changes rather than kept in step by hand — it is a
+   * pure function of the nodes, and a couple of hundred lines of string work is
+   * nothing next to a solver run.
+   */
+  readonly summary = signal<Summary>(EMPTY_SUMMARY);
+  readonly tab = signal<PanelTab>('plan');
+  /** Collapsed sections, by mechanic. Sections default to open. */
+  readonly closedGroups = signal<ReadonlySet<string>>(new Set());
+  /**
+   * The mechanic being pointed at: every one of its passives is ringed on the
+   * canvas and each of its cluster centres gets a beacon, which is how you find
+   * the other half of a mechanic that is split across the tree.
+   */
+  readonly focusedMechanic = signal<string | null>(null);
+
   readonly builds = signal<SavedBuild[]>([]);
   readonly buildName = signal('');
   /** The saved build the screen currently matches, so edits are obvious. */
@@ -145,6 +178,9 @@ export class Atlas {
   });
 
   private tree: Tree | null = null;
+  private stats: StatIndex | null = null;
+  /** Only for the debug dump — how many of GGG's wordings this tree has. */
+  private ruleCount = 0;
   private graph: Graph | null = null;
   private renderer: Renderer | null = null;
   private worker: Worker | null = null;
@@ -159,6 +195,12 @@ export class Atlas {
   private penalties: number[] = [];
   private route = new Set<number>();
   private preview = new Set<number>();
+  /** Nodes called out from the panel — a mechanic, or one summary line. */
+  private highlighted = new Set<number>();
+  /** Mechanic under the pointer right now, which outranks the pinned one. */
+  private hoverFocus: string | null = null;
+  /** The nodes behind one summary line, while it is hovered. */
+  private hoverNodeSet: readonly number[] | null = null;
   private hovered: number | null = null;
 
   private dist = new Int32Array(0);
@@ -209,6 +251,9 @@ export class Atlas {
       this.treeVersion.set(version);
 
       this.tree = await loadTree(version);
+      const rules = await loadStatRules(version);
+      this.ruleCount = rules.length;
+      this.stats = new StatIndex(this.tree, rules);
       this.loading.set('Loading sprites...');
       const sprites = new SpriteAtlas(this.tree.raw);
       await sprites.load(atlasAssetBase(version));
@@ -299,6 +344,8 @@ export class Atlas {
       bonusPoints: this.bonusPoints(),
       status: this.status(),
       notice: this.notice(),
+      summary: this.summary(),
+      ruleCount: this.ruleCount,
     }));
     const holder = window as unknown as { atlasDebug?: unknown };
     holder.atlasDebug = api;
@@ -341,6 +388,7 @@ export class Atlas {
         excluded: this.excludedSet,
         route: this.mode() === 'targets' ? this.route : new Set<number>(),
         preview: this.preview,
+        highlight: this.highlighted,
         hovered: this.hovered,
         mode: this.mode(),
       };
@@ -371,6 +419,8 @@ export class Atlas {
         const node = tree.byId.get(id);
         if (node?.allocatable && !this.targetSet.has(node.idx)) this.excludedSet.add(node.idx);
       }
+      if (saved.tab === 'plan' || saved.tab === 'summary') this.tab.set(saved.tab);
+      if (saved.closedGroups) this.closedGroups.set(new Set(saved.closedGroups));
     } catch {
       // corrupt or unavailable storage is not worth failing the tool over
     }
@@ -389,6 +439,8 @@ export class Atlas {
       allocated: ids(this.allocated),
       targets: ids(this.targetSet),
       excluded: ids(this.excludedSet),
+      tab: this.tab(),
+      closedGroups: [...this.closedGroups()],
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -453,7 +505,20 @@ export class Atlas {
     this.targets.set(chips(this.targetSet));
     this.excluded.set(chips(this.excludedSet));
     this.refreshShareCode();
+    this.refreshSummary();
     this.dirty = true;
+  }
+
+  /**
+   * Summarises the same set the share code carries: the route while you are
+   * still planning, the allocated tree otherwise. Reading a summary of the tree
+   * you are about to replace would be worse than useless.
+   */
+  private refreshSummary(): void {
+    const tree = this.tree;
+    const stats = this.stats;
+    if (!tree || !stats) return;
+    this.summary.set(summarise(tree, stats, this.route.size > 0 ? this.route : this.allocated));
   }
 
   private changed(): void {
@@ -945,9 +1010,11 @@ export class Atlas {
     this.routeCount.set(cost);
     this.routeApplied.set(sameSet(this.allocated, this.route));
     this.refreshBudget();
-    // The route is what a code shares while you are still planning, so it has
-    // to be rebuilt here too — a solver result never goes through syncCounts.
+    // The route is what a code shares and what the summary reads while you are
+    // still planning, so both have to be rebuilt here too — a solver result
+    // never goes through syncCounts.
     this.refreshShareCode();
+    this.refreshSummary();
     this.dirty = true;
   }
 
@@ -1016,6 +1083,58 @@ export class Atlas {
 
   highlight(idx: number): void {
     this.hovered = idx;
+    this.dirty = true;
+  }
+
+  // --------------------------------------------------------------- summary ---
+
+  setTab(tab: PanelTab): void {
+    this.tab.set(tab);
+    this.persist();
+  }
+
+  isGroupOpen(name: string): boolean {
+    return !this.closedGroups().has(name);
+  }
+
+  toggleGroupOpen(name: string): void {
+    const next = new Set(this.closedGroups());
+    if (!next.delete(name)) next.add(name);
+    this.closedGroups.set(next);
+    this.persist();
+  }
+
+  /**
+   * Clicking a mechanic pins it, so you can let go of the mouse and go looking
+   * for the clusters it lit up. Clicking it again, or the one already pinned,
+   * puts the tree back.
+   */
+  pinMechanic(name: string | null): void {
+    this.focusedMechanic.set(this.focusedMechanic() === name ? null : name);
+    this.applyHighlight();
+  }
+
+  hoverMechanic(name: string | null): void {
+    this.hoverFocus = name;
+    this.applyHighlight();
+  }
+
+  /** Hovering a line of the summary shows the nodes that add up to it. */
+  hoverNodes(nodes: readonly number[] | null): void {
+    this.hoverNodeSet = nodes;
+    this.applyHighlight();
+  }
+
+  private applyHighlight(): void {
+    const stats = this.stats;
+    const next = new Set<number>();
+    const mechanic = this.hoverFocus ?? this.focusedMechanic();
+    if (this.hoverNodeSet) {
+      for (const idx of this.hoverNodeSet) next.add(idx);
+    } else if (mechanic && stats) {
+      for (const idx of stats.nodesOfMechanic(mechanic)) next.add(idx);
+    }
+    this.highlighted = next;
     this.dirty = true;
   }
 
@@ -1104,6 +1223,8 @@ export class Atlas {
     this.hovered = null;
     this.preview.clear();
     this.tooltip.set(null);
+    // A pinned mechanic stays lit; only the pointing goes away.
+    this.hoverMechanic(null);
     this.dirty = true;
   }
 
@@ -1131,6 +1252,10 @@ export class Atlas {
     const idx = node?.idx ?? null;
     if (idx !== this.hovered) {
       this.hovered = idx;
+      // The mechanic icon in the middle of a wheel stands for the whole
+      // mechanic, and most mechanics are spread over several wheels — so
+      // pointing at one shows you where the rest of it is.
+      this.hoverMechanic(node?.kind === 'mastery' ? node.name : null);
       this.preview.clear();
       if (
         node &&
@@ -1152,6 +1277,22 @@ export class Atlas {
 
   private buildTooltip(node: TreeNode, clientX: number, clientY: number): TooltipView | null {
     if (node.kind === 'root') return null;
+    if (node.kind === 'mastery') {
+      const clusters = this.stats?.centresByMechanic.get(node.name)?.length ?? 1;
+      return {
+        x: clientX + 18,
+        y: clientY + 18,
+        name: node.name,
+        kind: 'mastery',
+        stats: [
+          clusters > 1
+            ? `${clusters} clusters on the tree — all of them are lit up`
+            : 'The only cluster for this mechanic',
+        ],
+        reminder: [],
+        hint: this.focusedMechanic() === node.name ? 'Click to unpin' : 'Click to keep it lit',
+      };
+    }
     let hint = '';
     if (!node.allocatable) {
       hint = '';
@@ -1179,6 +1320,10 @@ export class Atlas {
   }
 
   private onNodeClick(node: TreeNode): void {
+    if (node.kind === 'mastery') {
+      this.pinMechanic(node.name);
+      return;
+    }
     if (!node.allocatable) return;
     if (this.mode() === 'targets') {
       if (this.targetSet.has(node.idx)) this.targetSet.delete(node.idx);

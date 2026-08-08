@@ -1,3 +1,4 @@
+import type { StatRule, StatRuleFile } from './summary';
 import type { Edge, GroupInfo, NodeKind, RawTree, Tree, TreeNode } from './tree-types';
 import { DEFAULT_TREE_VERSION, findTreeVersion } from './tree-versions';
 
@@ -228,4 +229,22 @@ export async function loadTree(versionId: number = DEFAULT_TREE_VERSION): Promis
   const res = await fetch(`${atlasAssetBase(versionId)}tree.json`);
   if (!res.ok) throw new Error(`Could not load atlas tree ${version.label} (${res.status})`);
   return buildTree((await res.json()) as RawTree);
+}
+
+/**
+ * GGG's wordings for the modifiers on this tree, used by the summary to know
+ * that a chance which reaches 100% stops being written as a chance. Optional on
+ * purpose: a tree added before `npm run fetch:atlas-stats` has been run for it
+ * summarises perfectly well, it just never rewrites a total.
+ */
+export async function loadStatRules(
+  versionId: number = DEFAULT_TREE_VERSION,
+): Promise<StatRule[]> {
+  try {
+    const res = await fetch(`${atlasAssetBase(versionId)}stat-rules.json`);
+    if (!res.ok) return [];
+    return ((await res.json()) as StatRuleFile).rules ?? [];
+  } catch {
+    return [];
+  }
 }

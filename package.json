@@ -9,8 +9,10 @@
     "test": "ng test",
     "test:share": "node scripts/share-code.mjs",
     "test:strategy": "node scripts/strategy-code.mjs",
-    "fetch:strategy": "node scripts/fetch-strategy-items.mjs",
+    "test:summary": "node scripts/atlas-summary.mjs",
     "test:regex": "node scripts/regex-range.mjs",
+    "fetch:strategy": "node scripts/fetch-strategy-items.mjs",
+    "fetch:atlas-stats": "node scripts/fetch-atlas-stats.mjs",
     "github-build": "ng build --configuration production --base-href https://TesterNA.github.io/poe-utils-ng/ && node scripts/spa-fallback.mjs",
     "github-deploy": "npx angular-cli-ghpages --dir=dist/poe-utils-ng/browser --no-silent"
   },

@@ -107,6 +107,9 @@ everything that hung off it. Hovering previews the path and its cost.
 of them for the fewest points. "Apply route" turns the result into a real allocation you can keep
 extending by hand in mode 1.
 
+Either way the **Summary** tab says what the tree on screen actually grants, mechanic by mechanic,
+with everything that says the same thing added together.
+
 ### What costs a point
 
 Not every node in a tree is a passive you buy. The Atlas centre is free, and so is the unnamed
@@ -139,6 +142,67 @@ is debounced — a stale search is abandoned by discarding the worker.
 State (mode, tree version, allocated nodes, targets, blocked nodes) persists in `localStorage` under
 `poe_atlas_state`. The URL is only used to carry an inbound share code or tree version, and both are
 stripped once applied.
+
+### What the tree adds up to
+
+A hundred allocated nodes is a hundred lines of "3% increased Scarabs found in your Maps", and
+reading them one at a time tells you nothing. The **Summary** adds up the ones that say the same
+thing and files each under the mechanic it belongs to, which is the form you would write a strategy
+in. Keystones are listed whole instead — they change how maps play, and folding one into a running
+total would bury it.
+
+It is a tab of the panel rather than another section of it. A real tree's summary runs to fifty-odd
+lines, which is longer than everything else in the panel put together, and having it in the same
+scroll pushed Share and Saved builds somewhere you had to go looking for them. The point count, the
+tabs and Reset stay put; only the tab's own contents scroll.
+
+Two things make that harder than grouping strings.
+
+**Which number to add.** "Tier 1-15 Maps found have 5% chance to become 1 tier higher" has three
+numbers and only the middle one is yours. The parameter is found from the data rather than guessed:
+across the whole tree, the number that differs between nodes with the same wording is the one being
+handed out, and the rest are part of the sentence. When every node grants the same amount there is
+nothing to compare, so it falls back to the numbers written as percentages.
+
+**What the total reads as.** Once a chance reaches 100% the game stops writing it as a chance —
+"Your Maps have +100% chance to contain Niko" becomes "Your Maps contain Niko" — but only for the
+modifiers GGG wrote a second wording for. "chance for your Maps to attract Beyond Demons" has one
+wording and simply climbs past 100%. Nothing in the English says which is which, so it is looked up:
+`stat-rules.json` holds the wordings and the ranges they apply over, generated from GGG's own stat
+descriptions by `npm run fetch:atlas-stats -- <version>`. The same mechanism reads singular and
+plural, so one Blight chest is a chest and two are chests.
+
+The rules come from [RePoE](https://github.com/lvlvllvlvllvlvl/RePoE), an export of the game files.
+The atlas set alone is 12 MB and covers every stat in the game, so the script keeps only the ones
+this tree uses *and* whose wording can change at all — about 130 rules, a few kilobytes.
+
+A modifier the export does not know — a mechanic newer than it, which currently means most of the
+Mercenary and Trarthan lines — is still added up, in the wording the tree already gave it. That is
+the same answer minus the threshold rewrite. It is the case worth getting right, because it is where
+poeplanner gives up and prints the modifier once with an "×7" beside it, leaving you to do the
+arithmetic. Lines with no rule behind them are dimmed, so it is clear which totals are the game's
+wording and which are ours.
+
+Which mechanic a modifier belongs to comes from the tree, not from a keyword list: every wheel has a
+mastery at its centre naming the mechanic, and that names every node around it. About a fifth of the
+nodes sit in wheels with no mastery — the generic Scarab, Map and item-quantity clusters, and the
+keystones — and those fall back to matching on the text.
+
+`npm run test:summary` checks that no modifier line is lost or invented, that only the varying number
+is summed, that the rewrite fires at 100% for Niko and never for Beyond Demons, and that a modifier
+with no rule is still totalled.
+
+### Finding the rest of a mechanic
+
+Most mechanics are spread over several wheels — Mercenaries has five, scattered across the tree —
+which makes "have I taken all the Delve nodes?" a question you answer by scrolling around. Hovering
+a mechanic in the Summary, or the icon at the centre of any of its wheels, rings every one of its
+passives and puts a beacon on each of its other centres. Clicking a centre pins it, so you can let
+go of the mouse and go looking; clicking it again puts the tree back.
+
+A cluster centre is a mastery node. Those are decoration — they cost nothing and cannot be
+allocated — so they only answer to the pointer when nothing else is under it: they are the largest
+things on the tree and would otherwise swallow clicks meant for the passives around them.
 
 ### Sharing a plan
 
@@ -203,9 +267,14 @@ to move together for an old plan to stay renderable.
    `atlas-skills-4.jpg`, `atlas-skills-disabled-4.jpg`, `atlas-frame-4.png`, `atlas-mastery-4.png`,
    `atlas-group-background-4.png`, `atlas-background-4.jpg`, `background-4.png`
 4. add an entry to `TREE_VERSIONS` in `tree-versions.ts` with the next free `id`
+5. `npm run fetch:atlas-stats -- <league>` to write `stat-rules.json` beside the tree
 
 The version selector appears by itself once there is more than one entry. Never renumber an existing
 `id` or repoint it at different data — old share codes resolve through it.
+
+Step 5 is optional and can be done later: without it the summary still adds everything up, it just
+never rewrites a total that has reached its threshold. Rerunning it is safe — the file is derived
+from the tree and the export, and nothing else refers to it.
 
 The `line` and `masteryOverlay` sheets are intentionally skipped — nothing draws them.
 

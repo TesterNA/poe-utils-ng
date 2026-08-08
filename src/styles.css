@@ -1430,10 +1430,25 @@ input[type="range"]::-moz-range-thumb {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--bg-sidebar);
   border-left: 1px solid var(--border);
 }
+/* Only the tab's own contents scroll, so the point count, the tabs and Reset
+   stay where you left them however long a summary gets. */
+.atlas-panel-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  /* Keeps the scrollbar off the text without indenting the content. */
+  padding-right: 6px;
+  margin-right: -6px;
+}
+.atlas-tabs { margin-bottom: 0; }
 
 .atlas-panel-head {
   display: flex;
@@ -1702,6 +1717,95 @@ input[type="range"]::-moz-range-thumb {
   font-size: 12px;
   line-height: 1.4;
 }
+
+/* Summary — what the tree grants, added up per mechanic. */
+.atlas-sum-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-input);
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.atlas-sum-counts b {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.atlas-sum-group {
+  border-left: 3px solid var(--border);
+  border-radius: 2px;
+  background: rgba(255,255,255,0.02);
+}
+.atlas-sum-group.pinned { border-left-color: var(--green); }
+
+.atlas-sum-head {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 9px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.atlas-sum-head-static { cursor: default; }
+.atlas-sum-head:hover .atlas-sum-name { color: var(--green); }
+.atlas-sum-name {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.atlas-sum-count {
+  flex: 0 0 auto;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.atlas-sum-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0 5px;
+  list-style: none;
+}
+.atlas-sum-line,
+.atlas-keystone {
+  padding: 3px 9px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  /* Some modifiers are written over two lines and read wrong joined up. */
+  white-space: pre-line;
+}
+.atlas-sum-line:hover,
+.atlas-keystone:hover { background: #1a1e2b; }
+/* Not in GGG's stat descriptions, so the total is ours rather than the game's
+   wording — worth saying quietly, not worth shouting about. */
+.atlas-sum-line.unmatched { color: var(--text-dim); }
+.atlas-sum-line em {
+  margin-left: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-style: normal;
+}
+.atlas-keystone {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.atlas-keystone b { color: #c86bff; }
+.atlas-keystone span { color: var(--text-dim); }
 
 /* ============================================================
    KINGSMARCH SHIPMENT PLANNER

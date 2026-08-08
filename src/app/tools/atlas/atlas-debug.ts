@@ -1,3 +1,4 @@
+import type { Summary } from './summary';
 import type { Tree } from './tree-types';
 
 /**
@@ -29,6 +30,9 @@ export interface AtlasDebugState {
   bonusPoints: number;
   status: string;
   notice: string;
+  summary: Summary;
+  /** How many of GGG's wordings were loaded for this tree. */
+  ruleCount: number;
 }
 
 export interface AtlasDebugApi {
@@ -88,6 +92,26 @@ export function createAtlasDebug(tree: Tree, read: () => AtlasDebugState): Atlas
       gateways: allocated.filter((n) => n.kind === 'wormhole'),
       status: state.status,
       notice: state.notice,
+      // "That total looks wrong" is usually one of two things: the modifier is
+      // not in GGG's stat descriptions, so nothing rewrites it at 100%, or it
+      // landed under a mechanic you did not expect. Both are visible here.
+      summary: {
+        rulesLoaded: state.ruleCount,
+        modifierLines: state.summary.sourceLines,
+        withoutRule: state.summary.groups.reduce(
+          (n, g) => n + g.lines.filter((line) => !line.known).length,
+          0,
+        ),
+        groups: state.summary.groups.map((g) => ({
+          name: g.name,
+          lines: g.lines.map((line) => ({
+            text: line.text,
+            from: line.nodes.length,
+            known: line.known,
+          })),
+        })),
+        keystones: state.summary.keystones.map((k) => k.name),
+      },
       builds: state.builds,
       // A row whose stored number disagrees with its code is the thing to look
       // at when a saved build shows the wrong point count.
@@ -123,6 +147,9 @@ export function createAtlasDebug(tree: Tree, read: () => AtlasDebugState): Atlas
       }`,
       `status        ${d.status}`,
       `notice        ${d.notice || '-'}`,
+      `summary       ${d.summary.modifierLines} modifier lines over ` +
+        `${d.summary.groups.length} mechanics, ${d.summary.withoutRule} without a GGG wording ` +
+        `(${d.summary.rulesLoaded} loaded)`,
       `builds        ${
         d.builds.length
           ? d.builds

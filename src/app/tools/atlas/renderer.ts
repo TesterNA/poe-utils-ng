@@ -17,6 +17,12 @@ export interface RenderState {
   route: Set<number>;
   /** mode 1: path that a click would allocate right now */
   preview: Set<number>;
+  /**
+   * Nodes called out from the panel: one mechanic's passives, or the nodes
+   * behind a line of the summary. Purely a "look here", with no bearing on
+   * what is allocated.
+   */
+  highlight: Set<number>;
   hovered: number | null;
   mode: 'path' | 'targets';
 }
@@ -29,6 +35,7 @@ const COLORS = {
   target: '#ff4d4d',
   excluded: '#c2413f',
   hover: '#ffffff',
+  highlight: '#7ce89a',
 };
 
 export class Renderer {
@@ -88,23 +95,35 @@ export class Renderer {
     this.camera.y += before.y - after.y;
   }
 
-  /** Topmost node under a screen point, if any. */
+  /**
+   * Topmost node under a screen point, if any. A mastery — the mechanic icon in
+   * the middle of a wheel — only wins when nothing else is there: it is the
+   * largest thing on the tree and would otherwise swallow clicks meant for the
+   * passives around it.
+   */
   pick(sx: number, sy: number): TreeNode | null {
     const p = this.screenToTree(sx, sy);
     let best: TreeNode | null = null;
     let bestDist = Infinity;
+    let centre: TreeNode | null = null;
+    let centreDist = Infinity;
     for (const node of this.tree.nodes) {
-      if (node.kind === 'mastery' || node.kind === 'structural') continue;
+      if (node.kind === 'structural') continue;
       const dx = node.x - p.x;
       const dy = node.y - p.y;
       const d2 = dx * dx + dy * dy;
-      const r = node.radius;
-      if (d2 <= r * r && d2 < bestDist) {
+      if (d2 > node.radius * node.radius) continue;
+      if (node.kind === 'mastery') {
+        if (d2 < centreDist) {
+          centreDist = d2;
+          centre = node;
+        }
+      } else if (d2 < bestDist) {
         bestDist = d2;
         best = node;
       }
     }
-    return best;
+    return best ?? centre;
   }
 
   draw(state: RenderState): void {
@@ -254,7 +273,15 @@ export class Renderer {
       if (node.y < view.minY - 300 || node.y > view.maxY + 300) continue;
 
       if (node.kind === 'mastery') {
-        if (detailed) this.sprites.draw(ctx, 'mastery', node.icon, node.x, node.y);
+        const lit = state.highlight.has(node.idx);
+        // A cluster centre stays visible when its mechanic is called out, even
+        // zoomed far enough out that the icons are normally dropped — finding
+        // the other clusters is the whole point of lighting them up.
+        if (detailed || lit) this.sprites.draw(ctx, 'mastery', node.icon, node.x, node.y);
+        if (lit) {
+          beacon(ctx, node, COLORS.highlight);
+          if (state.hovered === node.idx) ring(ctx, node, COLORS.hover, 8, 1.16);
+        }
         continue;
       }
       // Nothing is drawn for a structural junction; the lines through it are
@@ -289,6 +316,8 @@ export class Renderer {
       if (frameKey) this.sprites.draw(ctx, 'frame', frameKey, node.x, node.y);
 
       if (excluded) ctx.restore();
+
+      if (state.highlight.has(node.idx)) ring(ctx, node, COLORS.highlight, 9, 1.2);
 
       if (inPreview && !allocated) ring(ctx, node, COLORS.linePreview, 7);
       else if (inRoute && !allocated) ring(ctx, node, COLORS.lineRoute, 7);
@@ -350,6 +379,22 @@ function cross(
   ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
+}
+
+/**
+ * A cluster centre that has been called out. Drawn as a filled halo rather than
+ * a ring because the point of it is to be findable while the camera is
+ * somewhere else entirely.
+ */
+function beacon(ctx: CanvasRenderingContext2D, node: TreeNode, color: string): void {
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, node.radius * 1.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ring(ctx, node, color, 12, 1.35);
 }
 
 function ring(

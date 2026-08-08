@@ -39,6 +39,22 @@
       </div>
     </div>
 
+    <!-- Planning and reading the result are separate jobs, and the summary of a
+         real tree is long enough to push Share and Saved builds off the bottom
+         of a panel it shared. -->
+    <div class="mode-toggle atlas-tabs">
+      <label class="mode-label">
+        <input type="radio" name="atlas-tab" value="plan" [checked]="tab() === 'plan'" (change)="setTab('plan')" />
+        <span class="mode-tab">Plan</span>
+      </label>
+      <label class="mode-label">
+        <input type="radio" name="atlas-tab" value="summary" [checked]="tab() === 'summary'" (change)="setTab('summary')" />
+        <span class="mode-tab">Summary</span>
+      </label>
+    </div>
+
+    <div class="atlas-panel-body">
+    @if (tab() === 'plan') {
     <div class="mode-toggle atlas-modes">
       <label class="mode-label">
         <input type="radio" name="atlas-mode" value="path" [checked]="mode() === 'path'" (change)="setMode('path')" />
@@ -103,6 +119,7 @@
         </ul>
       }
     }
+
 
     @if (excluded().length) {
       <div class="atlas-list-head">
@@ -228,6 +245,86 @@
         }
       </ul>
     }
+
+    } @else {
+      <div class="atlas-sum-counts">
+        <span><b>{{ summary().counts.normal }}</b> small</span>
+        <span><b>{{ summary().counts.notable }}</b> notable</span>
+        <span><b>{{ summary().counts.keystone }}</b> keystone</span>
+        @if (summary().counts.wormhole) {
+          <span><b>{{ summary().counts.wormhole }}</b> gateway</span>
+        }
+      </div>
+
+      @if (!summary().groups.length && !summary().keystones.length) {
+        <p class="atlas-hint">
+          Nothing allocated yet. Once there is a tree, everything it grants is added up here,
+          mechanic by mechanic.
+        </p>
+      }
+
+      @if (summary().keystones.length) {
+        <div class="atlas-sum-group">
+          <div class="atlas-sum-head atlas-sum-head-static">
+            <span class="atlas-sum-name">Keystones</span>
+            <span class="atlas-sum-count">{{ summary().keystones.length }}</span>
+          </div>
+          <ul class="atlas-sum-list">
+            @for (keystone of summary().keystones; track keystone.idx) {
+              <li
+                class="atlas-keystone"
+                (mouseenter)="hoverNodes([keystone.idx]); highlight(keystone.idx)"
+                (mouseleave)="hoverNodes(null)"
+              >
+                <b>{{ keystone.name }}</b>
+                @for (stat of keystone.stats; track $index) {
+                  <span>{{ stat }}</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      @for (group of summary().groups; track group.name) {
+        <div class="atlas-sum-group" [class.pinned]="focusedMechanic() === group.name">
+          <button
+            type="button"
+            class="atlas-sum-head"
+            [title]="'Show every ' + group.name + ' passive on the tree'"
+            (click)="toggleGroupOpen(group.name)"
+            (mouseenter)="hoverMechanic(group.name)"
+            (mouseleave)="hoverMechanic(null)"
+          >
+            <span class="atlas-sum-name">{{ group.name }}</span>
+            <span class="atlas-sum-count">{{ group.lines.length }}</span>
+          </button>
+          @if (isGroupOpen(group.name)) {
+            <ul class="atlas-sum-list">
+              @for (line of group.lines; track $index) {
+                <li
+                  class="atlas-sum-line"
+                  [class.unmatched]="!line.known"
+                  [title]="
+                    line.nodes.length === 1
+                      ? 'From 1 node'
+                      : 'Added up from ' + line.nodes.length + ' nodes'
+                  "
+                  (mouseenter)="hoverNodes(line.nodes)"
+                  (mouseleave)="hoverNodes(null)"
+                >
+                  {{ line.text }}
+                  @if (line.nodes.length > 1) {
+                    <em>×{{ line.nodes.length }}</em>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    }
+    </div>
 
     <div class="atlas-panel-foot">
       @if (notice()) {
