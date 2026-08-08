@@ -1579,8 +1579,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .atlas-target-list,
-.strat-saved-list,
-.atlas-hits {
+.strat-saved-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1641,30 +1640,24 @@ input[type="range"]::-moz-range-thumb {
   border-color: var(--accent-dim);
 }
 
-.atlas-hit {
+/* All a search says in the panel: how many it lit, and how to stop. The tree
+   itself is the result. */
+.atlas-search-result {
   display: flex;
-  flex-direction: column;
-  padding: 5px 8px;
-  border-left: 3px solid var(--border);
-  border-radius: 2px;
-  background: var(--bg-input);
-  cursor: pointer;
-}
-.atlas-hit:hover { background: #1a1e2b; }
-.atlas-hit b { font-size: 12px; }
-.atlas-hit small {
-  overflow: hidden;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   color: var(--text-dim);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 12px;
 }
+.atlas-search-result b {
+  color: #ff7ae0;
+  font-size: 14px;
+}
+.atlas-search-none { color: var(--text-muted); }
 
-.atlas-hit.kind-notable,
 .atlas-target.kind-notable { border-left-color: var(--accent); }
-.atlas-hit.kind-keystone,
 .atlas-target.kind-keystone { border-left-color: #c86bff; }
-.atlas-hit.kind-wormhole,
 .atlas-target.kind-wormhole { border-left-color: var(--blue); }
 
 .atlas-panel-foot {

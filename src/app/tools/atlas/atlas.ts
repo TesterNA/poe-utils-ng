@@ -65,10 +65,6 @@ interface NodeChip {
   kind: string;
 }
 
-interface SearchHit extends NodeChip {
-  stat: string;
-}
-
 interface TooltipView {
   x: number;
   y: number;
@@ -153,9 +149,10 @@ export class Atlas {
   readonly notice = signal('');
   readonly loading = signal('Loading atlas tree...');
   readonly query = signal('');
-  readonly searchHits = signal<SearchHit[]>([]);
-  /** Everything the query matches, including what the list is too short to show. */
+  /** How many nodes the query lit up. */
   readonly searchTotal = signal(0);
+  /** A query long enough to be worth answering, so the panel can say so. */
+  readonly searching = computed(() => this.query().trim().length >= 2);
   readonly tooltip = signal<TooltipView | null>(null);
 
   readonly treeVersions: readonly AtlasTreeVersion[] = TREE_VERSIONS;
@@ -1231,9 +1228,9 @@ export class Atlas {
   }
 
   /**
-   * The list is the shortlist; the tree is the answer. Every match is marked on
-   * the canvas, not just the forty the panel has room for, and a query that
-   * names a mechanic lights that mechanic's cluster centres too — so searching
+   * The tree is the answer, so this only decides which nodes are lit — a list of
+   * names in the panel said nothing about where any of them were. A query that
+   * names a mechanic lights that mechanic's cluster centres too, so searching
    * "delirium" points at the wheels as well as at the passives.
    */
   private applyQuery(value: string): void {
@@ -1241,21 +1238,15 @@ export class Atlas {
     const tree = this.tree;
     const q = value.trim().toLowerCase();
     if (!tree || q.length < 2) {
-      this.searchHits.set([]);
       this.searchTotal.set(0);
       this.matched = new Set();
       this.dirty = true;
       return;
     }
-    const found = tree.nodes.filter((n) => n.allocatable && n.searchText.includes(q));
-    this.searchHits.set(
-      found
-        .slice()
-        .sort((a, b) => rank(a, q) - rank(b, q))
-        .slice(0, 40)
-        .map((n) => ({ idx: n.idx, name: n.name, kind: n.kind, stat: n.stats[0] ?? '' })),
-    );
-    const marked = new Set(found.map((n) => n.idx));
+    const marked = new Set<number>();
+    for (const node of tree.nodes) {
+      if (node.allocatable && node.searchText.includes(q)) marked.add(node.idx);
+    }
     // Masteries are not allocatable, so they are never in `found` — the mechanic
     // names have to be matched separately.
     for (const [mechanic, centres] of this.stats?.centresByMechanic ?? []) {
@@ -1263,24 +1254,6 @@ export class Atlas {
     }
     this.matched = marked;
     this.searchTotal.set(marked.size);
-    this.dirty = true;
-  }
-
-  pickSearchHit(idx: number): void {
-    const tree = this.tree;
-    const renderer = this.renderer;
-    if (!tree || !renderer) return;
-    const node = tree.nodes[idx];
-    renderer.camera.x = node.x;
-    renderer.camera.y = node.y;
-    renderer.camera.scale = Math.max(renderer.camera.scale, 0.22);
-    if (this.mode() === 'targets') {
-      this.targetSet.add(idx);
-      this.solve();
-      this.changed();
-    } else if (!this.allocated.has(idx)) {
-      this.allocatePathTo(idx);
-    }
     this.dirty = true;
   }
 
@@ -1464,12 +1437,4 @@ function sameSet(a: Set<number>, b: Set<number>): boolean {
 
 function plural(count: number, word: string): string {
   return count === 1 ? word : `${word}s`;
-}
-
-function rank(node: TreeNode, q: string): number {
-  const name = node.name.toLowerCase();
-  if (name === q) return 0;
-  if (name.startsWith(q)) return 1;
-  if (name.includes(q)) return 2;
-  return 3;
 }

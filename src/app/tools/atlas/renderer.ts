@@ -24,9 +24,10 @@ export interface RenderState {
    */
   highlight: Set<number>;
   /**
-   * What the search box matches. Its own colour rather than the highlight's:
-   * a search and a called-out mechanic are often up at the same time, and the
-   * point of the search is to tell its hits apart from everything else.
+   * What the search box matches. While it holds anything the rest of the tree is
+   * drawn faint, which is the whole answer to "where are they" — a search and a
+   * called-out mechanic can be up at once, so the hits also have their own
+   * colour rather than borrowing the highlight's.
    */
   matched: Set<number>;
   hovered: number | null;
@@ -241,11 +242,15 @@ export class Renderer {
         },
       ];
 
+    // A search takes the whole tree down with it, lines included — a lit node
+    // inside a full-strength web is not much easier to find than before.
+    const quiet = state.matched.size > 0 ? 0.3 : 1;
+
     for (const layer of layers) {
       ctx.beginPath();
       ctx.strokeStyle = layer.color;
       ctx.lineWidth = layer.width;
-      ctx.globalAlpha = layer.alpha;
+      ctx.globalAlpha = layer.alpha * quiet;
       ctx.lineCap = 'round';
       let any = false;
       for (let i = 0; i < this.tree.edges.length; i++) {
@@ -275,6 +280,7 @@ export class Renderer {
   ): void {
     const ctx = this.ctx;
     const detailed = this.camera.scale > 0.05;
+    const searching = state.matched.size > 0;
     for (const node of this.tree.nodes) {
       if (node.x < view.minX - 300 || node.x > view.maxX + 300) continue;
       if (node.y < view.minY - 300 || node.y > view.maxY + 300) continue;
@@ -285,7 +291,12 @@ export class Renderer {
         // A cluster centre stays visible when its mechanic is called out, even
         // zoomed far enough out that the icons are normally dropped — finding
         // the other clusters is the whole point of lighting them up.
-        if (detailed || lit || hit) this.sprites.draw(ctx, 'mastery', node.icon, node.x, node.y);
+        if (detailed || lit || hit) {
+          ctx.save();
+          if (searching && !hit) ctx.globalAlpha = 0.22;
+          this.sprites.draw(ctx, 'mastery', node.icon, node.x, node.y);
+          ctx.restore();
+        }
         if (hit) beacon(ctx, node, COLORS.matched);
         if (lit) beacon(ctx, node, COLORS.highlight);
         if ((lit || hit) && state.hovered === node.idx) ring(ctx, node, COLORS.hover, 8, 1.16);
@@ -301,10 +312,13 @@ export class Renderer {
       const inPreview = state.preview.has(node.idx);
       const active = allocated || inRoute || inPreview;
 
-      // Blocked nodes are dimmed so the eye skips them the way the solver does.
-      if (excluded) {
+      // Blocked nodes are dimmed so the eye skips them the way the solver does;
+      // during a search everything the query missed is dimmed harder still.
+      const missed = searching && !state.matched.has(node.idx);
+      const faded = excluded || missed;
+      if (faded) {
         ctx.save();
-        ctx.globalAlpha = 0.4;
+        ctx.globalAlpha = missed ? (excluded ? 0.1 : 0.22) : 0.4;
       }
 
       const sheet = active ? 'Active' : 'Inactive';
@@ -322,9 +336,16 @@ export class Renderer {
       const frameKey = frameFor(node.kind, active);
       if (frameKey) this.sprites.draw(ctx, 'frame', frameKey, node.x, node.y);
 
-      if (excluded) ctx.restore();
+      if (faded) ctx.restore();
 
       if (state.matched.has(node.idx)) found(ctx, node, COLORS.matched, this.camera.scale);
+
+      // Target, route and block markers go quiet with their nodes, otherwise a
+      // planned tree stays a wall of rings and the search is lost inside it.
+      if (missed) {
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+      }
 
       if (state.highlight.has(node.idx)) ring(ctx, node, COLORS.highlight, 9, 1.2);
 
@@ -344,6 +365,9 @@ export class Renderer {
         ctx.restore();
       }
 
+      if (missed) ctx.restore();
+
+      // Whatever the pointer is on stays bright: you are asking about that one.
       if (state.hovered === node.idx) ring(ctx, node, COLORS.hover, 5, 1.26);
     }
   }

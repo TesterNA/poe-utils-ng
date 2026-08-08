@@ -146,24 +146,18 @@
         (input)="onSearch($event)"
       />
     </div>
-    @if (searchHits().length) {
-      <div class="atlas-list-head">
-        <div class="section-label">Matches ({{ searchTotal() }})</div>
+    <!-- No list of hits: reading names in a panel tells you nothing about where
+         they are. The tree answers instead — matches keep their colour and
+         everything else goes quiet. -->
+    @if (searching()) {
+      <div class="atlas-search-result">
+        @if (searchTotal()) {
+          <span><b>{{ searchTotal() }}</b> lit on the tree, the rest dimmed</span>
+        } @else {
+          <span class="atlas-search-none">Nothing matches that</span>
+        }
         <button type="button" class="atlas-link-btn" (click)="clearSearch()">clear</button>
       </div>
-      @if (searchTotal() > searchHits().length) {
-        <p class="atlas-hint atlas-share-hint">
-          Every match is ringed on the tree; the closest {{ searchHits().length }} are listed.
-        </p>
-      }
-      <ul class="atlas-hits">
-        @for (hit of searchHits(); track hit.idx) {
-          <li class="atlas-hit" [class]="'kind-' + hit.kind" (mouseenter)="highlight(hit.idx)" (click)="pickSearchHit(hit.idx)">
-            <b>{{ hit.name }}</b>
-            <small>{{ hit.stat }}</small>
-          </li>
-        }
-      </ul>
     }
 
     <div class="atlas-list-head">
