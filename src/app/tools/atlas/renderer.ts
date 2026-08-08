@@ -199,19 +199,28 @@ export class Renderer {
       ctx.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
       ctx.restore();
     }
-    // Centred on the tree itself, not on the root node: the root is the Atlas
-    // centre by meaning, but it sits well below the middle of the layout, which
-    // dragged the whole painting down with it.
-    const b = this.tree.bounds;
+    /* The painting goes exactly where GGG says the tree is.
+
+       The export carries its own box — min_x/min_y/max_x/max_y — and the art is
+       drawn for that box: 11369 x 10833 tree units against a 4096 x 3948 sprite,
+       which is the same shape to within a percent. So there is nothing to scale
+       by eye; the rectangle IS the answer, and the picture lands where every
+       other planner puts it.
+
+       (What was here before: the sprite centred on a node and multiplied by a
+       hand-set 2.6, which came in with the original port and was never derived
+       from anything. It ran about 6% small and sat off-centre.) */
+    const { min_x, min_y, max_x, max_y } = this.tree.raw;
     ctx.save();
     ctx.globalAlpha = 0.75;
-    this.sprites.draw(
+    this.sprites.drawBox(
       ctx,
       'atlasBackground',
       'AtlasPassiveBackground',
-      (b.minX + b.maxX) / 2,
-      (b.minY + b.maxY) / 2,
-      2.6,
+      min_x,
+      min_y,
+      max_x - min_x,
+      max_y - min_y,
     );
     ctx.restore();
   }

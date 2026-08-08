@@ -79,6 +79,25 @@ export class SpriteAtlas {
     ctx.drawImage(e.img, e.coord.x, e.coord.y, e.coord.w, e.coord.h, x - w / 2, y - h / 2, w, h);
   }
 
+  /**
+   * Draws the sprite onto an exact rectangle in tree coordinates, rather than
+   * centred at a point and scaled by eye. For anything the export gives real
+   * bounds for — the Atlas painting — this is the placement, not an estimate.
+   */
+  drawBox(
+    ctx: CanvasRenderingContext2D,
+    group: string,
+    key: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+  ) {
+    const e = this.entries.get(`${group}/${key}`);
+    if (!e || !e.img.complete || e.img.naturalWidth === 0) return;
+    ctx.drawImage(e.img, e.coord.x, e.coord.y, e.coord.w, e.coord.h, x, y, w, h);
+  }
+
   image(group: string, key: string): HTMLImageElement | null {
     return this.entries.get(`${group}/${key}`)?.img ?? null;
   }
