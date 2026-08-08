@@ -73,17 +73,14 @@
   --gem-b:      #5b8cff;
 
   /* The ground. Panels are barely-blurred glass, and glass shows nothing unless
-     something with structure passes behind it — a smooth gradient blurred by
-     7px is pixel-for-pixel a flat fill. So the backdrop is built to be worth
-     blurring: four hard-edged lights drifting under the content column, and a
-     fine grid whose crisp lines go soft the moment they cross a panel. That
-     contrast is the effect; the blur alone is not. */
-  --orb-1: rgba(92,110,255,0.62);
-  --orb-2: rgba(40,80,230,0.46);
-  --orb-3: rgba(150,120,255,0.44);
-  --orb-4: rgba(70,140,255,0.40);
-  --grid-line: rgba(255,255,255,0.14);
-  --grid-step: 30px;
+     something with structure passes behind it — a smooth gradient blurred by 7px
+     is pixel-for-pixel a flat fill. So the backdrop is the Atlas painting, which
+     the atlas tool already ships: real shapes for the blur to bend, and the
+     page's colour comes from it rather than from anything drawn on top. The
+     scrim over it is what keeps text readable. */
+  --ground-art:
+    linear-gradient(rgba(8,11,24,0.62), rgba(8,11,24,0.82)),
+    url('/assets/atlas/3.29/atlas-background-4.jpg');
 
   /* the corner of a panel, and the corner of whatever sits inside one — a
      segmented tab, a chip, a progress bar. They travel together: a rounded
@@ -145,27 +142,35 @@ body {
   overflow-x: hidden;
 }
 
-/* The ground: lights and grid, fixed behind everything, drifting slowly so the
-   glass above has moving structure to bend. Oversized by 20% on every side so
-   the drift never walks an edge into view. */
+/* The ground: the Atlas painting with four soft lights over it, fixed behind
+   everything and drifting slowly, so the glass above has structure — and moving
+   structure — to bend.
+
+   The good part of the painting is its top band — the halo and the three
+   figures — so that band is what has to survive on a wide screen. Hence no
+   overhang at all: the layer is exactly the window, the art is anchored to its
+   top edge, and it is the duller middle that falls off the bottom. The room the
+   drift needs comes from the art being 12% wider than the window rather than
+   from the layer hanging past it. */
 body::before {
   content: '';
   position: fixed;
-  inset: -20%;
+  inset: -5%;
   z-index: 0;
   pointer-events: none;
-  background-image:
-    radial-gradient(26% 22% at 38% 24%, var(--orb-1) 0%, transparent 48%),
-    radial-gradient(22% 20% at 62% 12%, var(--orb-2) 0%, transparent 48%),
-    radial-gradient(26% 24% at 56% 60%, var(--orb-3) 0%, transparent 48%),
-    radial-gradient(22% 20% at 44% 88%, var(--orb-4) 0%, transparent 48%),
-    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px var(--grid-step)),
-    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px var(--grid-step));
+  background-image: var(--ground-art);
+  /* two layers: the scrim that holds the painting down, and the painting */
+  background-size: cover, 112% auto;
+  background-position: center, center top;
+  background-repeat: no-repeat;
   animation: ground-drift 48s ease-in-out infinite alternate;
 }
+/* Kept inside what the extra 12% of width can cover: the scale grows the layer
+   3% on every side, so a 2% travel still leaves a percent of margin at the edge
+   it moves toward. Any further and the window's own edge walks into view. */
 @keyframes ground-drift {
   from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(3%, -2%, 0) scale(1.06); }
+  to   { transform: translate3d(2%, -2%, 0) scale(1.06); }
 }
 @media (prefers-reduced-motion: reduce) {
   body::before { animation: none; }
