@@ -1654,6 +1654,11 @@ input[type="range"]::-moz-range-thumb {
   color: #ff7ae0;
   font-size: 14px;
 }
+.atlas-search-result em {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: normal;
+}
 .atlas-search-none { color: var(--text-muted); }
 
 .atlas-target.kind-notable { border-left-color: var(--accent); }

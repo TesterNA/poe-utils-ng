@@ -152,7 +152,12 @@
     @if (searching()) {
       <div class="atlas-search-result">
         @if (searchTotal()) {
-          <span><b>{{ searchTotal() }}</b> lit on the tree, the rest dimmed</span>
+          <span>
+            <b>{{ searchTotal() }}</b> lit on the tree, the rest dimmed
+            @if (searchedStats()) {
+              <em>· nothing is named that, so these are modifier matches</em>
+            }
+          </span>
         } @else {
           <span class="atlas-search-none">Nothing matches that</span>
         }

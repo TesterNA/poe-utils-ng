@@ -151,6 +151,8 @@ export class Atlas {
   readonly query = signal('');
   /** How many nodes the query lit up. */
   readonly searchTotal = signal(0);
+  /** Nothing was named that, so these hits come from the modifier text. */
+  readonly searchedStats = signal(false);
   /** A query long enough to be worth answering, so the panel can say so. */
   readonly searching = computed(() => this.query().trim().length >= 2);
   readonly tooltip = signal<TooltipView | null>(null);
@@ -1229,9 +1231,14 @@ export class Atlas {
 
   /**
    * The tree is the answer, so this only decides which nodes are lit — a list of
-   * names in the panel said nothing about where any of them were. A query that
-   * names a mechanic lights that mechanic's cluster centres too, so searching
-   * "delirium" points at the wheels as well as at the passives.
+   * names in the panel said nothing about where any of them were.
+   *
+   * Names and mechanics first, modifier text only if they came back with
+   * nothing. Almost every passive on this tree is worded "Your Maps have..." or
+   * "...in your Maps", so searching the modifiers for "map" lit the whole atlas
+   * and told you nothing; the same word read as a mechanic and a name is the
+   * handful of nodes actually about maps. Whole mechanics rather than just their
+   * cluster centres, because "delirium" means the wheels and everything on them.
    */
   private applyQuery(value: string): void {
     this.query.set(value);
@@ -1239,21 +1246,33 @@ export class Atlas {
     const q = value.trim().toLowerCase();
     if (!tree || q.length < 2) {
       this.searchTotal.set(0);
+      this.searchedStats.set(false);
       this.matched = new Set();
       this.dirty = true;
       return;
     }
     const marked = new Set<number>();
+    const mark = (idx: number) => {
+      const kind = tree.nodes[idx].kind;
+      // A junction has nothing to say and nothing is drawn for it.
+      if (kind !== 'structural' && kind !== 'root') marked.add(idx);
+    };
     for (const node of tree.nodes) {
-      if (node.allocatable && node.searchText.includes(q)) marked.add(node.idx);
+      if (node.allocatable && node.name.toLowerCase().includes(q)) mark(node.idx);
     }
-    // Masteries are not allocatable, so they are never in `found` — the mechanic
-    // names have to be matched separately.
-    for (const [mechanic, centres] of this.stats?.centresByMechanic ?? []) {
-      if (mechanic.toLowerCase().includes(q)) for (const idx of centres) marked.add(idx);
+    for (const mechanic of this.stats?.centresByMechanic.keys() ?? []) {
+      if (!mechanic.toLowerCase().includes(q)) continue;
+      for (const idx of this.stats!.nodesOfMechanic(mechanic)) mark(idx);
+    }
+    const fromStats = marked.size === 0;
+    if (fromStats) {
+      for (const node of tree.nodes) {
+        if (node.allocatable && node.searchText.includes(q)) mark(node.idx);
+      }
     }
     this.matched = marked;
     this.searchTotal.set(marked.size);
+    this.searchedStats.set(fromStats && marked.size > 0);
     this.dirty = true;
   }
 
