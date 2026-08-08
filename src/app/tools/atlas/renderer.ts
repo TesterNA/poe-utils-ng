@@ -34,6 +34,27 @@ export interface RenderState {
   mode: 'path' | 'targets';
 }
 
+/**
+ * Where the Atlas painting sits, in tree units. Matched against the in-game
+ * placement by hand, because nothing in the export gives it.
+ *
+ * The obvious candidate does not work: min_x/min_y/max_x/max_y are the extent of
+ * *group centres*, not a frame for the picture. They lean 159 units off the
+ * tree's axis, and their shape differs from the sprite's by 1.2% — fitting the
+ * art to that box stretches it, and a stretched picture cannot be lined up on
+ * both axes at once.
+ *
+ * What the numbers say: 11050 tall is the sprite's own 3948 units times 2.799,
+ * and 11596 wide is 4096 times 2.831. So the art is drawn very slightly wider
+ * than its natural shape — about 1.1% — which is why a single uniform factor
+ * never quite sat right. Only the top edge comes from the data: min_y, the top
+ * of the tree, with the painting hanging ART_DROP below it.
+ */
+const ART_W = 11596;
+const ART_H = 11050;
+const ART_CX = -80;
+const ART_DROP = 700;
+
 const COLORS = {
   lineIdle: '#413a2e',
   lineActive: '#d8b45a',
@@ -199,25 +220,18 @@ export class Renderer {
       ctx.fillRect(view.minX, view.minY, view.maxX - view.minX, view.maxY - view.minY);
       ctx.restore();
     }
-    /* Where the painting goes, measured rather than guessed.
-
-       Size comes from the export's own box: 11369 x 10833 tree units against a
-       4096 x 3948 sprite (2048 x 1974 pixels off a sheet whose zoom is 0.5) —
-       the same shape to within a percent, which is what a picture drawn for
-       this tree looks like.
-
-       Position does NOT come from that box. min_x/max_x are the extent of
-       *group centres*, and the groups are not symmetric: the rightmost sits at
-       5526 while the leftmost sits at -5844, so the box's middle is 159 units
-       left of the tree's own axis. The painting, meanwhile, is symmetric about
-       its own middle — measured on the file, its mirror axis is 0.507 of its
-       width — and the Atlas centre sits at x = 0. So it is centred on 0, and
-       only its height is taken from the box. */
-    const { min_x, min_y, max_x, max_y } = this.tree.raw;
-    const w = max_x - min_x;
+    // the painting, on the rectangle at the top of this file
     ctx.save();
-    ctx.globalAlpha = 0.75;
-    this.sprites.drawBox(ctx, 'atlasBackground', 'AtlasPassiveBackground', -w / 2, min_y, w, max_y - min_y);
+    ctx.globalAlpha = 0.85;
+    this.sprites.drawBox(
+      ctx,
+      'atlasBackground',
+      'AtlasPassiveBackground',
+      ART_CX - ART_W / 2,
+      this.tree.raw.min_y + ART_DROP,
+      ART_W,
+      ART_H,
+    );
     ctx.restore();
   }
 
