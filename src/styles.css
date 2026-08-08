@@ -539,8 +539,12 @@ body::before {
   align-items: center;
   gap: 6px;
 }
+/* Every text-ish field the site uses. type="search" is on the list because a
+   missing type here does not degrade — it drops the field to the browser's own
+   white box, which is what the strategy filter had been wearing. */
 input[type="number"],
 input[type="text"],
+input[type="search"],
 input[type="email"],
 input[type="password"],
 select,
@@ -562,6 +566,7 @@ input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 input[type="number"]:focus,
 input[type="text"]:focus,
+input[type="search"]:focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
 select:focus,
