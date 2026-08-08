@@ -1,16 +1,24 @@
 /*
  * The functions compile on their own terms.
  *
- * The root tsconfig is Angular's: it targets the browser, and it uses project
+ * The root tsconfig is Angular's: it targets the browser and uses project
  * references, which Vercel's TypeScript support does not read. TypeScript picks
  * the nearest config walking up from each file, so this one covers everything
  * under api/ and the app's config covers src/.
+ *
+ * `module` has to be CommonJS. Vercel compiles each file here rather than
+ * bundling it, and the emitted .js is loaded by Node from a package.json with no
+ * `"type": "module"` — so an ESM emit dies on its own first import with
+ * "Cannot use import statement outside a module", identically on every route,
+ * before any handler runs. Setting `"type": "module"` at the root would fix the
+ * functions by changing how the entire Angular project is interpreted, which is
+ * a large lever for a small problem; this config is the local one.
  */
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "lib": ["ES2023"],
     /* Request, Response and Headers are globals here, from @types/node. */
     "types": ["node"],
@@ -21,8 +29,7 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "esModuleInterop": true,
-    "noEmit": true
+    "esModuleInterop": true
   },
   "include": ["**/*.ts"]
 }
