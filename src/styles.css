@@ -723,6 +723,9 @@ select option { background: var(--bg-input); }
   position: relative;
   cursor: pointer;
 }
+.mode-label.full-width {
+  grid-column: 1 / -1;
+}
 .mode-label input { display: none; }
 .mode-tab {
   display: block;
