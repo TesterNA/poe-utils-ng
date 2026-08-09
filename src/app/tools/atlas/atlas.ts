@@ -533,6 +533,21 @@ export class Atlas {
     return total;
   }
 
+  /**
+   * What the hovered path would actually add. The walk back ends on the node it
+   * hangs from — already paid for — and structural junctions are free, so
+   * neither belongs in the number the tooltip promises.
+   */
+  private previewCost(): number {
+    const tree = this.tree;
+    if (!tree) return this.preview.size;
+    let total = 0;
+    for (const idx of this.preview) {
+      if (tree.nodes[idx].costsPoint && !this.allocated.has(idx)) total++;
+    }
+    return total;
+  }
+
   /** Atlas points handed out by the nodes in `set`. */
   private grantedBy(set: Set<number>): number {
     const tree = this.tree;
@@ -1427,8 +1442,11 @@ export class Atlas {
       hint = this.targetSet.has(node.idx)
         ? 'Click to remove target · right-click to block'
         : 'Click to add as target · right-click to block';
-    } else if (!this.allocated.has(node.idx) && this.preview.size) {
-      hint = `+${this.preview.size} point(s) · right-click to block`;
+    } else if (!this.allocated.has(node.idx)) {
+      const cost = this.previewCost();
+      hint = cost
+        ? `+${cost} ${plural(cost, 'point')} · right-click to block`
+        : 'Right-click to block';
     } else {
       hint = 'Right-click to block';
     }
