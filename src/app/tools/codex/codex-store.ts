@@ -14,7 +14,7 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { DEFAULT_TREE_VERSION, findTreeVersion } from '../atlas/tree-versions';
 import type { Doc, Entry, EntryData, EntryKind, Page, PageLayout, SavedView } from './codex-types';
-import type { CodexDriver, StorageUse, StoreName } from './codex-driver';
+import type { CodexDriver, NewAsset, StorageUse, StoreName } from './codex-driver';
 import { LocalDriver } from './codex-db';
 import { newDoc, newEntry, newPage, newView, normaliseTags } from './codex-schema';
 import { placedIds, tagCounts } from './codex-query';
@@ -133,6 +133,33 @@ export class CodexStore {
     return written;
   }
 
+  /**
+   * Saving under a name that is already taken replaces it, which is what
+   * "save" means everywhere else in this app — the atlas and strategy
+   * libraries both work that way, and this is the button next to them.
+   */
+  async keepNamed(
+    kind: EntryKind,
+    title: string,
+    data: EntryData,
+    extra: Partial<Entry> = {},
+  ): Promise<Entry | null> {
+    const named = title.trim();
+    if (!named) return null;
+    const existing = this.entries().find(
+      (entry) => entry.kind === kind && entry.title.toLowerCase() === named.toLowerCase(),
+    );
+    const entry: Entry = existing
+      ? { ...existing, ...extra, title: named, data, updatedAt: Date.now() }
+      : { ...newEntry(kind, named, data), ...extra };
+    if (!(await this.write(() => this.driver.putEntry(entry)))) return null;
+    this.entries.update((entries) =>
+      existing ? entries.map((e) => (e.id === entry.id ? entry : e)) : [entry, ...entries],
+    );
+    void this.refreshUsage();
+    return entry;
+  }
+
   async saveEntry(entry: Entry): Promise<boolean> {
     const next: Entry = { ...entry, tags: normaliseTags(entry.tags), updatedAt: Date.now() };
     if (!(await this.write(() => this.driver.putEntry(next)))) return false;
@@ -182,6 +209,38 @@ export class CodexStore {
     if (store === 'views') this.views.update(drop);
     void this.refreshUsage();
     return true;
+  }
+
+  /** Stores an image and hands back its id, or null when the write failed. */
+  async addAsset(blob: Blob, meta: NewAsset): Promise<string | null> {
+    try {
+      const asset = await this.driver.putAsset(blob, meta);
+      this.assetCount.update((n) => n + 1);
+      void this.refreshUsage();
+      return asset.id;
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'That image could not be stored.');
+      return null;
+    }
+  }
+
+  /**
+   * An object URL per asset, made once and kept.
+   *
+   * They are only released when the tab goes, which is the right trade here: a
+   * Codex holds tens of images, not thousands, and revoking one that a card is
+   * still showing turns it into a broken picture with no way back.
+   */
+  private readonly urls = new Map<string, string>();
+
+  async assetUrl(id: string): Promise<string> {
+    const known = this.urls.get(id);
+    if (known) return known;
+    const blob = await this.driver.asset(id);
+    if (!blob) return '';
+    const url = URL.createObjectURL(blob);
+    this.urls.set(id, url);
+    return url;
   }
 
   private async refreshUsage(): Promise<void> {

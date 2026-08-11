@@ -430,6 +430,31 @@ learn by clicking is what you can then type. A search worth keeping gets a name 
 rail. The list groups by type, tag, league or status — grouping by tag lists an entry under each of
 its tags, because a strategy that is both `#legion` and `#day-1` is an answer to both questions.
 
+### Cards that say what a thing is
+
+An atlas or a strategy shows the shape of the tree, what it costs, its keystones, the mechanics it
+leans on, and the scarabs by icon — none of which the documents this replaces can do, because there
+an atlas is a dead imgur screenshot and the scarabs are a sentence.
+
+All of it is read once, at the moment of saving, by the **Codex** button beside *Save* in the Atlas
+and in Map Strategy. That is the only moment the tree is in memory anyway; `tree.json` is 1.5 MB and
+the sprite sheets another 4, so a list of forty cards cannot each go and ask, and a card that says
+nothing until it has is a card you scroll past. The code stays the source of truth — ⌖ opens the
+real thing in the tool it came from — and the snapshot is only what the card reads.
+
+The thumbnail is drawn rather than screenshotted: the atlas icons are illegible at 46 pixels, and
+what actually tells two trees apart at that size is their shape, which needs `tree.json` alone. The
+whole tree is drawn faint underneath the allocated part, because a branch means nothing without the
+tree it is a branch of.
+
+Nothing is required. An atlas can be our share code, somebody else's planner link, a screenshot, or
+all three; a strategy can be a `ST…` code or the sentence "2 доп легиона и 1 офицер" with a map roll
+beside it. Four dots on the card say how much of it a machine can read, which is the same thing as
+saying what a search will find — scarabs picked from the catalogue answer `scarab:cloister`, a
+sentence about scarabs does not. It is an invitation, never a gate: a three second note beats a
+complete record nobody writes. When the guess is wrong — and it is wrong for every imgur atlas —
+*It is really…* changes what an entry is and keeps what it pointed at.
+
 ### Pages
 
 A page arranges entries; it does not own them. Putting one on two pages is putting *the same entry*

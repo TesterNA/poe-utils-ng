@@ -42,6 +42,7 @@ const query = await load('codex-query');
 const capture = await load('codex-capture');
 const metrics = await load('codex-metrics');
 const blocks = await load('codex-blocks');
+const format = await load('codex-format');
 const {
   SCHEMA,
   BUNDLE_VERSION,
@@ -557,7 +558,114 @@ check('blocks: nudge past the end does nothing', flat(nudgeBlock(sheet, [2], 1))
 check('blocks: nudge inside a column', flat(nudgeBlock(sheet, [2, 1, 0], 1)), 'a,b,[c|e,d]');
 check('blocks: the page it was given is never touched', flat(sheet), 'a,b,[c|d,e]');
 
+// --- what a paste turns into ---------------------------------------------------
+// Our own codes and links are the point of the whole feature: a card that can
+// say what a tree costs, against a spreadsheet where the atlas is an imgur
+// screenshot nobody can open.
+
+check(
+  'capture: our own atlas link becomes a tree, not a link',
+  captureOne('Cloister: https://poe-utils.example/atlas?c=AT3:AQKKApndluC4YRIx'),
+  {
+    kind: 'atlas',
+    title: 'Cloister',
+    data: { k: 'atlas', src: { code: 'AT3:AQKKApndluC4YRIx' } },
+  },
+);
+check(
+  'capture: and our own strategy link',
+  captureOne('https://poe-utils.example/strategy?s=ST1:AQKKApndluC4YRIx').data,
+  { k: 'strategy', src: { code: 'ST1:AQKKApndluC4YRIx' } },
+);
+check(
+  'capture: a bare code pasted out of the tool next door',
+  captureOne('день 4 легион: AT3:AQKKApndluC4YRIx'),
+  { kind: 'atlas', title: 'день 4 легион', data: { k: 'atlas', src: { code: 'AT3:AQKKApndluC4YRIx' } } },
+);
+check(
+  'capture: somebody else\'s tree is still a tree',
+  captureOne('Starter Atlas (47 Points): https://poeplanner.com/a/669h'),
+  {
+    kind: 'atlas',
+    title: 'Starter Atlas (47 Points)',
+    data: { k: 'atlas', src: { url: 'https://poeplanner.com/a/669h' } },
+  },
+);
+check(
+  'capture: a short link is left alone, because the slug means nothing here',
+  captureOne('https://poe-utils.example/s/k7mfrp2q').kind,
+  'link',
+);
+
+// --- what a card can say -------------------------------------------------------
+
+const { completeness, subtitleOf, typeOf, urlOf } = format;
+
+const strategyEntry = (src, extra = {}) => ({
+  ...newEntry('strategy', 'Cloister', { k: 'strategy', src }),
+  ...extra,
+});
+
+check(
+  'card: an atlas that is only a screenshot says so',
+  completeness(newEntry('atlas', 'x', { k: 'atlas', src: { imageUrl: 'https://imgur.com/a/x' } })).map(
+    (mark) => `${mark.label}:${mark.on ? 1 : 0}`,
+  ),
+  ['our tree code:0', 'a link out:0', 'a picture:1', 'notes:0'],
+);
+check(
+  'card: scarabs written as a sentence are not scarabs a search can find',
+  completeness(strategyEntry({ picksText: '5x Cloister' })).find((m) => m.label.startsWith('scarabs'))
+    .on,
+  false,
+);
+check(
+  'card: scarabs picked from the catalogue are',
+  completeness(strategyEntry({ picks: [{ code: 1, count: 5 }] })).find((m) =>
+    m.label.startsWith('scarabs'),
+  ).on,
+  true,
+);
+// A strategy code exists as soon as one is saved, whether or not a tree was
+// ever attached, so the code is no evidence of a tree — what was read off the
+// tree is.
+check(
+  'card: a saved strategy with no tree does not claim one',
+  completeness(strategyEntry({ code: 'ST1:AQACKgEsAQA', snapshot: { treeVersion: 1, slots: 2, picks: [], points: 0, keystones: [], issues: [] } })).find(
+    (m) => m.label === 'a tree',
+  ).on,
+  false,
+);
+check(
+  'card: one with a screenshot of somebody else\'s tree does',
+  completeness(strategyEntry({ atlas: { imageUrl: 'https://imgur.com/a/x' } })).find(
+    (m) => m.label === 'a tree',
+  ).on,
+  true,
+);
+
+check(
+  'card: a strategy reads as slots, maps and what it paid',
+  subtitleOf(
+    strategyEntry(
+      { picks: [{ code: 1, count: 5 }], map: '8-mod Dunes' },
+      { league: '3.29', runs: [{ id: 'r', at: 0, minutes: 60, investDiv: 2, revenueDiv: 14 }] },
+    ),
+  ),
+  'strategy · 5/5 slots · 8-mod Dunes · 3.29 · 12 div/h',
+);
+check(
+  'card: an atlas points at the planner, not at its own picture',
+  urlOf(newEntry('atlas', 'x', { k: 'atlas', src: { imageUrl: 'https://imgur.com/a/x' } })),
+  '',
+);
+check(
+  'card: a link is filed by what it is for, not by being a link',
+  typeOf(newEntry('link', 'x', { k: 'link', url: 'https://pobb.in/x', host: 'pobb.in', role: 'pob' })),
+  'pob',
+);
+
 console.log(
-  failures ? `\n${failures} failed` : 'codex schema, capture, query, measurements and blocks: all checks passed',
+  failures ? `\n${failures} failed` : 'codex schema, capture, query, measurements, blocks and cards: all checks passed',
 );
 process.exit(failures ? 1 : 0);

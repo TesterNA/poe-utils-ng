@@ -247,6 +247,14 @@
             <button class="poe-btn poe-btn-dim" [disabled]="!name().trim()" (click)="save()">
               Save
             </button>
+            <button
+              class="poe-btn poe-btn-dim"
+              title="Keep this strategy in the Codex — scarabs by name, what the tree costs, and the notes"
+              [disabled]="!name().trim() || keeping()"
+              (click)="saveToCodex()"
+            >
+              Codex
+            </button>
           </div>
           @if (library().length) {
             <ul class="strat-saved-list">

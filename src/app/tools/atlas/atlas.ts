@@ -49,6 +49,9 @@ import { StatIndex, summarise, type Summary } from './summary';
 import { atlasAssetBase, loadStatRules, loadTree } from './tree-loader';
 import type { SolverResponse } from './solver.worker';
 import type { Tree, TreeNode } from './tree-types';
+import { CodexStore } from '../codex/codex-store';
+import { atlasSnapshot } from '../codex/codex-snapshot';
+import { drawTreeThumb } from '../codex/codex-thumb';
 
 type Mode = 'path' | 'targets';
 /**
@@ -184,6 +187,9 @@ export class Atlas {
   readonly buildName = signal('');
   /** A short link is a round trip, so the button has to be able to say so. */
   readonly shortening = signal(false);
+
+  private readonly codex = inject(CodexStore);
+  readonly keeping = signal(false);
   /** The saved build the screen currently matches, so edits are obvious. */
   readonly currentBuildId = computed(() => {
     const code = this.shareCode();
@@ -816,6 +822,48 @@ export class Atlas {
     this.buildName.set('');
     this.sync.schedule();
     this.shareMessage.set(`Saved "${name}".`);
+  }
+
+  /**
+   * The same tree, kept in the Codex instead of (or as well as) the local
+   * library.
+   *
+   * A saved build is a name and a code; a Codex entry can also carry what the
+   * tree *is* — its points, its keystones, the mechanics it leans on and a
+   * picture of its shape — and it can then sit on a page next to the scarabs
+   * and the notes that go with it. All of that is read here, while the tree is
+   * in memory, because a card that has to load 1.5 MB before it can say
+   * anything is a card nobody waits for.
+   */
+  async saveToCodex(): Promise<void> {
+    const name = this.buildName().trim();
+    const code = this.shareCode();
+    const tree = this.tree;
+    if (!name || !code || !tree || this.keeping()) return;
+    this.keeping.set(true);
+    try {
+      // The library has to be read before it can be written to, or saving over
+      // a name that is already there would make a second entry with that name.
+      await this.codex.load();
+      const shown = this.route.size > 0 ? this.route : this.allocated;
+      const blob = await drawTreeThumb(tree, shown);
+      const thumbId = blob
+        ? ((await this.codex.addAsset(blob, { type: 'image/webp', w: 420, h: 420 })) ?? undefined)
+        : undefined;
+      const snapshot = atlasSnapshot(tree, code, this.treeVersion(), this.summary(), thumbId);
+      const league = findTreeVersion(this.treeVersion())?.label;
+      const entry = await this.codex.keepNamed(
+        'atlas',
+        name,
+        { k: 'atlas', src: { code, snapshot } },
+        league ? { league } : {},
+      );
+      this.shareMessage.set(
+        entry ? `Kept "${name}" in the Codex.` : 'Could not keep that in the Codex.',
+      );
+    } finally {
+      this.keeping.set(false);
+    }
   }
 
   loadBuild(build: SavedBuild): void {

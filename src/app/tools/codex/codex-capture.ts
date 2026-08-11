@@ -166,19 +166,70 @@ function splitLabel(line: string, url: string): string {
     .trim();
 }
 
+/** Our own codes, pasted straight out of the atlas or strategy tool. */
+const OWN_CODE = /((?:AT|ST)\d+:[A-Za-z0-9_-]{8,})/;
+
+/**
+ * Our own share links. The code is in the query string — `?c=` for a tree,
+ * `?s=` for a strategy — which is worth unpicking rather than keeping as a
+ * link: a link opens the tool, a code makes an entry that can say what the
+ * tree costs and what scarabs go in it.
+ *
+ * A short link (`/s/slug`) is not unpicked, because the slug means nothing
+ * without asking the server what it stands for.
+ */
+function ownCode(url: string): { kind: 'atlas' | 'strategy'; code: string } | null {
+  try {
+    const parsed = new URL(url);
+    const atlas = parsed.searchParams.get('c');
+    if (atlas && /\/atlas$/.test(parsed.pathname)) return { kind: 'atlas', code: atlas };
+    const strategy = parsed.searchParams.get('s');
+    if (strategy && /\/strategy$/.test(parsed.pathname)) return { kind: 'strategy', code: strategy };
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export function captureOne(line: string): Captured | null {
   const text = line.trim();
   if (!text) return null;
 
   const found = URL_PATTERN.exec(text);
   if (!found) {
+    // A bare share code, pasted out of the tool next door.
+    const code = OWN_CODE.exec(text);
+    if (code) {
+      const kind = code[1].startsWith('AT') ? 'atlas' : 'strategy';
+      const label = text.replace(code[1], '').replace(/[\s:—–-]+$/, '').trim();
+      return kind === 'atlas'
+        ? { kind, title: label || 'Atlas tree', data: { k: 'atlas', src: { code: code[1] } } }
+        : { kind, title: label || 'Strategy', data: { k: 'strategy', src: { code: code[1] } } };
+    }
     // No link: it is something somebody wrote.
     return { kind: 'note', title: text.slice(0, 120), data: { k: 'note' } };
   }
 
   const url = tidyUrl(found[0]);
   const label = splitLabel(text, found[0]);
+
+  const own = ownCode(url);
+  if (own) {
+    return own.kind === 'atlas'
+      ? { kind: 'atlas', title: label || 'Atlas tree', data: { k: 'atlas', src: { code: own.code } } }
+      : { kind: 'strategy', title: label || 'Strategy', data: { k: 'strategy', src: { code: own.code } } };
+  }
+
   const role = roleOf(url);
+
+  // Somebody else's tree is still a tree. It stays a link inside the card —
+  // there is nothing to read out of poeplanner from here — but it belongs
+  // among the atlases rather than among the odds and ends, and the card has a
+  // place to put our own code beside it later.
+  if (role === 'atlas') {
+    return { kind: 'atlas', title: label || titleFromUrl(url), data: { k: 'atlas', src: { url } } };
+  }
+
   const filter = role === 'filter' ? filterInfoOf(url, label) : undefined;
   return {
     kind: 'link',

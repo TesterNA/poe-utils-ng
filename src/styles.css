@@ -3379,3 +3379,96 @@ a.strat-link-btn { text-decoration: none; }
 @media (max-width: 760px) {
   .codex-cols { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* What a card shows once it holds a real tree or a real set of scarabs. The
+   thumbnail is the drawn shape of the tree rather than a screenshot of the
+   atlas: at this size the icons are illegible anyway, and the shape is what
+   tells two trees apart. */
+.codex-asset,
+.codex-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.codex-thumb {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  margin: 6px 0 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--inner-radius);
+  overflow: hidden;
+  background: var(--bg-well);
+}
+.codex-list.cards .codex-thumb { width: 60px; height: 60px; }
+
+.codex-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+.codex-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px 1px 1px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(var(--fg-rgb),0.03);
+}
+.codex-pick img { width: 16px; height: 16px; object-fit: contain; }
+.codex-pick b { color: var(--text-dim); font-size: 10px; font-weight: 600; }
+
+.codex-keystones {
+  color: var(--keystone);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.codex-mech {
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.codex-mech b { color: var(--stat); font-weight: 600; }
+
+/* Four dots: what a machine can read of this entry. An invitation, never a
+   requirement — a three second note beats a complete record nobody writes. */
+.codex-marks {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-top: 12px;
+}
+.codex-marks i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(var(--fg-rgb),0.13);
+}
+.codex-marks i.on { background: var(--accent); }
+
+.codex-convert {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.codex-convert button {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+.codex-convert button:hover { color: var(--accent); border-color: var(--accent-dim); }

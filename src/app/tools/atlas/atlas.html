@@ -247,6 +247,14 @@
       <button class="poe-btn poe-btn-dim" [disabled]="!buildName().trim() || !shareCode()" (click)="saveBuild()">
         Save
       </button>
+      <button
+        class="poe-btn poe-btn-dim"
+        title="Keep this tree in the Codex — with its points, keystones, mechanics and a picture of its shape"
+        [disabled]="!buildName().trim() || !shareCode() || keeping()"
+        (click)="saveToCodex()"
+      >
+        Codex
+      </button>
     </div>
     @if (builds().length) {
       <ul class="atlas-target-list">

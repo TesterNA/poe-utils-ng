@@ -13,7 +13,9 @@ import { perHourLabel, runTotals } from './codex-metrics';
 /** Where the ↗ goes, when there is anywhere to go. */
 export function urlOf(entry: Entry): string {
   if (entry.data.k === 'link') return entry.data.url;
-  if (entry.data.k === 'atlas') return entry.data.src.url ?? entry.data.src.imageUrl ?? '';
+  // Not the picture: a card already shows that, and a link that only reopens
+  // what is on screen is a link nobody presses.
+  if (entry.data.k === 'atlas') return entry.data.src.url ?? '';
   if (entry.data.k === 'image') return entry.data.imageUrl ?? '';
   if (entry.data.k === 'build') return entry.data.links[0]?.url ?? '';
   return '';
@@ -82,4 +84,54 @@ export function mb(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   const value = bytes / (1024 * 1024);
   return value < 100 ? `${value.toFixed(1)} MB` : `${Math.round(value)} MB`;
+}
+
+/**
+ * How much of an entry a machine can read, as a few marks on the card.
+ *
+ * The documents this replaces are full of half-written strategies — a scarab
+ * line, an imgur link, no tree — and that is fine: writing one down in three
+ * seconds is worth more than a complete record nobody writes. So this is an
+ * invitation and never a requirement. It says what is *there*, which is also
+ * what says what a search will and will not find: scarabs picked from the
+ * catalogue answer `scarab:cloister`, a sentence about scarabs does not.
+ */
+export interface Mark {
+  label: string;
+  on: boolean;
+}
+
+export function completeness(entry: Entry): Mark[] {
+  const data = entry.data;
+  if (data.k === 'atlas') {
+    return [
+      { label: 'our tree code', on: !!data.src.code },
+      { label: 'a link out', on: !!data.src.url },
+      {
+        label: 'a picture',
+        on: !!(data.src.snapshot?.thumbId || data.src.assetId || data.src.imageUrl),
+      },
+      { label: 'notes', on: entry.body.trim().length > 0 },
+    ];
+  }
+  if (data.k === 'strategy') {
+    const src = data.src;
+    // Our strategy code always exists once it has been saved from the tool, and
+    // it carries a tree only if one was attached — so the code is no evidence
+    // of a tree, and what it read off that tree is.
+    const tree = !!(
+      src.atlas?.code ||
+      src.atlas?.url ||
+      src.atlas?.imageUrl ||
+      (src.snapshot?.points ?? 0) > 0 ||
+      src.snapshot?.keystones.length
+    );
+    return [
+      { label: 'a tree', on: tree },
+      { label: 'scarabs from the catalogue', on: !!(src.snapshot?.picks.length || src.picks?.length) },
+      { label: 'measured', on: !!entry.runs?.length },
+      { label: 'notes', on: entry.body.trim().length > 0 },
+    ];
+  }
+  return [];
 }

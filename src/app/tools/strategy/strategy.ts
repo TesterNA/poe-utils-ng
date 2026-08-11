@@ -26,7 +26,11 @@ import { LibrarySync } from '../../shared/sync';
 import { ToolPage } from '../../shared/tool-page';
 import { loadBuilds, type SavedBuild } from '../atlas/atlas-builds';
 import { peekPlan, ShareCodeError } from '../atlas/share-code';
+import { decodePlan } from '../atlas/share-code';
 import { loadTree } from '../atlas/tree-loader';
+import { CodexStore } from '../codex/codex-store';
+import { strategySnapshot } from '../codex/codex-snapshot';
+import { drawTreeThumb } from '../codex/codex-thumb';
 import type { Tree } from '../atlas/tree-types';
 import { DEFAULT_TREE_VERSION, findTreeVersion } from '../atlas/tree-versions';
 import { decodeStrategy, encodeStrategy, peekStrategy } from './strategy-code';
@@ -109,6 +113,9 @@ export class Strategy {
   readonly library = signal<SavedStrategy[]>([]);
   /** A short link is a round trip, so the button has to be able to say so. */
   readonly shortening = signal(false);
+
+  private readonly codex = inject(CodexStore);
+  readonly keeping = signal(false);
 
   /** Public because the template hides the short link button without a backend. */
   readonly auth = inject(Auth);
@@ -546,6 +553,72 @@ export class Strategy {
     this.name.set('');
     this.sync.schedule();
     this.shareMessage.set(`Saved "${name}".`);
+  }
+
+  /**
+   * The same strategy, kept in the Codex.
+   *
+   * What travels beyond the code is what a card needs to be read without
+   * opening anything: the scarabs by name and icon rather than by number, how
+   * many slots they fill, what the attached tree costs and which keystones it
+   * takes, whatever the validator is unhappy about, and a picture of the tree's
+   * shape. The notes go in the entry's own body, where they can be edited from
+   * the page the strategy ends up on.
+   */
+  async saveToCodex(): Promise<void> {
+    const name = this.name().trim();
+    const catalogue = this.catalogue();
+    if (!name || !catalogue || this.keeping()) return;
+    this.keeping.set(true);
+    try {
+      // The library has to be read before it can be written to, or saving over
+      // a name that is already there would make a second entry with that name.
+      await this.codex.load();
+      const treeCode = this.treeCode();
+      const tree = treeCode ? (this.trees.get(this.treeVersion()) ?? null) : null;
+      let thumbId: string | undefined;
+      if (tree && treeCode) {
+        try {
+          const plan = decodePlan(treeCode, tree);
+          const allocated = new Set<number>();
+          for (const id of plan.allocated) {
+            const node = tree.byId.get(id);
+            if (node) allocated.add(node.idx);
+          }
+          const blob = await drawTreeThumb(tree, allocated);
+          if (blob) {
+            thumbId =
+              (await this.codex.addAsset(blob, { type: 'image/webp', w: 420, h: 420 })) ?? undefined;
+          }
+        } catch {
+          // A tree that cannot be read is not a reason to refuse the save.
+        }
+      }
+      const snapshot = strategySnapshot(
+        this.picks(),
+        catalogue,
+        this.treeVersion(),
+        tree,
+        treeCode,
+        this.issues().map((issue) => issue.text),
+        thumbId,
+      );
+      const league = this.gameVersion();
+      const entry = await this.codex.keepNamed(
+        'strategy',
+        name,
+        { k: 'strategy', src: { code: this.shareCode(), snapshot } },
+        {
+          ...(league ? { league } : {}),
+          ...(this.notes().trim() ? { body: this.notes().trim() } : {}),
+        },
+      );
+      this.shareMessage.set(
+        entry ? `Kept "${name}" in the Codex.` : 'Could not keep that in the Codex.',
+      );
+    } finally {
+      this.keeping.set(false);
+    }
   }
 
   load(entry: SavedStrategy): void {
