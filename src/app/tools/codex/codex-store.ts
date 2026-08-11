@@ -16,7 +16,7 @@ import { DEFAULT_TREE_VERSION, findTreeVersion } from '../atlas/tree-versions';
 import type { Doc, Entry, EntryData, EntryKind, Page, PageLayout, SavedView } from './codex-types';
 import type { CodexDriver, StorageUse, StoreName } from './codex-driver';
 import { LocalDriver } from './codex-db';
-import { newDoc, newEntry, newView, normaliseTags } from './codex-schema';
+import { newDoc, newEntry, newPage, newView, normaliseTags } from './codex-schema';
 import { placedIds, tagCounts } from './codex-query';
 
 @Injectable({ providedIn: 'root' })
@@ -140,6 +140,24 @@ export class CodexStore {
     return true;
   }
 
+  async createPage(docId: string, title: string, parentId: string | null = null): Promise<Page | null> {
+    const named = title.trim();
+    if (!named) return null;
+    const siblings = this.pages().filter((page) => page.docId === docId && page.parentId === parentId);
+    const page = newPage(docId, named, siblings.length);
+    page.parentId = parentId;
+    if (!(await this.write(() => this.driver.putPage(page)))) return null;
+    this.pages.update((pages) => [...pages, page]);
+    return page;
+  }
+
+  async savePage(page: Page): Promise<boolean> {
+    const next: Page = { ...page, updatedAt: Date.now() };
+    if (!(await this.write(() => this.driver.putPage(next)))) return false;
+    this.pages.update((pages) => pages.map((p) => (p.id === next.id ? next : p)));
+    return true;
+  }
+
   async addView(name: string, query: string, layout: PageLayout): Promise<SavedView | null> {
     const named = name.trim();
     if (!named) return null;
@@ -153,7 +171,13 @@ export class CodexStore {
     if (!(await this.write(() => this.driver.remove(store, id)))) return false;
     const drop = <T extends { id: string }>(list: T[]) => list.filter((item) => item.id !== id);
     if (store === 'docs') this.docs.update(drop);
-    if (store === 'pages') this.pages.update(drop);
+    if (store === 'pages') {
+      // A subpage without its parent is unreachable, so it goes too. The
+      // entries on either are untouched: a page never owned them.
+      const children = this.pages().filter((page) => page.parentId === id);
+      for (const child of children) await this.write(() => this.driver.remove('pages', child.id));
+      this.pages.update((pages) => pages.filter((page) => page.id !== id && page.parentId !== id));
+    }
     if (store === 'entries') this.entries.update(drop);
     if (store === 'views') this.views.update(drop);
     void this.refreshUsage();

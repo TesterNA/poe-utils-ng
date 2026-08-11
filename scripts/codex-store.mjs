@@ -41,6 +41,7 @@ const schema = await load('codex-schema');
 const query = await load('codex-query');
 const capture = await load('codex-capture');
 const metrics = await load('codex-metrics');
+const blocks = await load('codex-blocks');
 const {
   SCHEMA,
   BUNDLE_VERSION,
@@ -517,7 +518,46 @@ check(
   '12 div/h',
 );
 
+// --- blocks on a page ---------------------------------------------------------
+// Dragging is the one interaction where a mistake loses work rather than just
+// looking wrong: a drop that quietly drops what it was carrying is
+// indistinguishable from a page that ate your notes.
+
+const { blockAt, insertBlock, moveBlock, nudgeBlock, removeBlock, updateBlock } = blocks;
+
+const e = (id) => ({ t: 'entry', id });
+const sheet = [e('a'), e('b'), { t: 'columns', cols: [[e('c')], [e('d'), e('e')]] }];
+const flat = (list) =>
+  list
+    .map((b) => (b.t === 'columns' ? `[${b.cols.map((c) => flat(c)).join('|')}]` : (b.id ?? b.t)))
+    .join(',');
+
+check('blocks: read a top-level path', blockAt(sheet, [1]).id, 'b');
+check('blocks: read into a column', blockAt(sheet, [2, 1, 0]).id, 'd');
+check('blocks: a path into a block that is not columns leads nowhere', blockAt(sheet, [0, 0, 0]), null);
+
+check('blocks: insert at the top', flat(insertBlock(sheet, [0], e('z'))), 'z,a,b,[c|d,e]');
+check('blocks: insert into a column', flat(insertBlock(sheet, [2, 0, 1], e('z'))), 'a,b,[c,z|d,e]');
+check('blocks: remove', flat(removeBlock(sheet, [1])), 'a,[c|d,e]');
+check('blocks: remove takes a columns block with its contents', flat(removeBlock(sheet, [2])), 'a,b');
+check('blocks: update replaces in place', flat(updateBlock(sheet, [1], e('B'))), 'a,B,[c|d,e]');
+
+// Taking the block out before putting it back is what makes a downward move
+// land one short, so the index is adjusted rather than left as an off-by-one.
+check('blocks: move down lands where it was dropped', flat(moveBlock(sheet, [0], [2])), 'b,a,[c|d,e]');
+check('blocks: move up', flat(moveBlock(sheet, [1], [0])), 'b,a,[c|d,e]');
+check('blocks: move from one column to the other', flat(moveBlock(sheet, [2, 0, 0], [2, 1, 0])), 'a,b,[|c,d,e]');
+check('blocks: move out of a column onto the sheet', flat(moveBlock(sheet, [2, 1, 1], [0])), 'e,a,b,[c|d]');
+check('blocks: a columns block cannot be dropped inside itself', flat(moveBlock(sheet, [2], [2, 0, 0])), flat(sheet));
+check('blocks: a path that leads nowhere changes nothing', flat(moveBlock(sheet, [9], [0])), flat(sheet));
+
+check('blocks: nudge down', flat(nudgeBlock(sheet, [0], 1)), 'b,a,[c|d,e]');
+check('blocks: nudge up', flat(nudgeBlock(sheet, [1], -1)), 'b,a,[c|d,e]');
+check('blocks: nudge past the end does nothing', flat(nudgeBlock(sheet, [2], 1)), flat(sheet));
+check('blocks: nudge inside a column', flat(nudgeBlock(sheet, [2, 1, 0], 1)), 'a,b,[c|e,d]');
+check('blocks: the page it was given is never touched', flat(sheet), 'a,b,[c|d,e]');
+
 console.log(
-  failures ? `\n${failures} failed` : 'codex schema, capture, query and measurements: all checks passed',
+  failures ? `\n${failures} failed` : 'codex schema, capture, query, measurements and blocks: all checks passed',
 );
 process.exit(failures ? 1 : 0);

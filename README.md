@@ -430,12 +430,31 @@ learn by clicking is what you can then type. A search worth keeping gets a name 
 rail. The list groups by type, tag, league or status — grouping by tag lists an entry under each of
 its tags, because a strategy that is both `#legion` and `#day-1` is an answer to both questions.
 
+### Pages
+
+A page arranges entries; it does not own them. Putting one on two pages is putting *the same entry*
+in two places — edit it from either and both change, delete the page and the entry stays in the
+library. That is the thing the source documents cannot do: there, having the filter links on both
+this league's sheet and the permanent one means pasting them twice and letting the two drift.
+
+A page is either **arranged** or **live**. Arranged is blocks: an entry, a heading, a note, a
+divider, two columns, or a live list. Live is one query answered every time you open it — which is
+what a custom group actually is, since "strategies for this build, best paid first" stays right when
+a new strategy is tagged tomorrow and a hand-made list does not. The two are the same page with a
+switch, and a live list block puts one inside an arranged page.
+
+Two columns exist because both source documents fall into two columns by hand within a few rows of
+starting. So a position on a page is a path rather than an index — `[3]` is the fourth block,
+`[3, 1, 0]` is the first block in its second column — and one level is where it stops, which
+`readPage` enforces on the way in. Blocks move by dragging or with the arrows; a downward move
+adjusts for the block having been lifted out first, and a columns block cannot be dropped inside
+itself. `codex-blocks.ts` is pure and tested, because a drop that silently loses what it was
+carrying is indistinguishable from a page that ate your notes.
+
 `npm run test:codex` covers the readers (what is kept, what is dropped, what defaults are filled),
 tag normalisation, the atlas and strategy sources at every resolution they arrive in, the migration
 chain being complete, the export bundle round trip, the capture rules against lines copied out of
-the source documents, every query operator, and the run arithmetic.
-
-Pages are next: a page arranges these entries without owning them.
+the source documents, every query operator, the run arithmetic, and every way a block can move.
 
 ## Accounts and sync
 

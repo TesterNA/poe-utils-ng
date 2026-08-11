@@ -1,0 +1,242 @@
+<!-- One block's content. Columns are handled by the caller, because a column
+     inside a column is a layout nobody asked for and a recursion nobody
+     bounded — `readPage` refuses it on the way in, and so does this. -->
+<ng-template #blockView let-block="block" let-path="path">
+  @switch (block.t) {
+    @case ('entry') {
+      @if (entry(block.id); as found) {
+        <codex-entry-card [entry]="found" [full]="true" (opened)="toggleEntry(found.id)" />
+        @if (openEntry() === found.id) {
+          <codex-entry-editor
+            [entry]="found"
+            (saved)="saveEntry($event)"
+            (cancelled)="toggleEntry(found.id)"
+            (removed)="removeEntry($event)"
+          />
+        }
+      } @else {
+        <p class="codex-hint codex-missing">
+          This entry is gone from the library. Remove the block, or find it again.
+        </p>
+      }
+    }
+    @case ('heading') {
+      <input
+        class="codex-block-heading"
+        type="text"
+        [value]="block.text"
+        (input)="patchText(path, block, $event)"
+      />
+    }
+    @case ('text') {
+      <textarea
+        class="codex-block-text"
+        rows="3"
+        placeholder="Write something…"
+        [value]="block.md"
+        (input)="patchText(path, block, $event)"
+      ></textarea>
+    }
+    @case ('divider') {
+      <div class="poe-divider">
+        <div class="poe-divider-line"></div>
+        <div class="poe-diamond"></div>
+        <div class="poe-divider-line"></div>
+      </div>
+    }
+    @case ('query') {
+      <div class="codex-live">
+        <input
+          class="codex-live-q"
+          type="text"
+          placeholder="kind:strategy tag:legion sort:perhour"
+          [value]="block.q"
+          (input)="patchText(path, block, $event)"
+        />
+        <ul class="codex-list">
+          @for (found of liveResults(block.q); track found.id) {
+            <li class="codex-entry">
+              <codex-entry-card [entry]="found" (opened)="toggleEntry(found.id)" />
+              @if (openEntry() === found.id) {
+                <codex-entry-editor
+                  [entry]="found"
+                  (saved)="saveEntry($event)"
+                  (cancelled)="toggleEntry(found.id)"
+                  (removed)="removeEntry($event)"
+                />
+              }
+            </li>
+          }
+        </ul>
+        <p class="codex-hint">
+          A live list: {{ countOf(liveResults(block.q).length, 'entry') }} now, and whatever
+          answers the same question later.
+        </p>
+      </div>
+    }
+  }
+</ng-template>
+
+<!-- The bar that adds a block at a given position. -->
+<ng-template #adder let-path="path">
+  @if (isPicking(path)) {
+    <div class="codex-pick">
+      <input
+        type="search"
+        placeholder="Find an entry to put here…"
+        autocomplete="off"
+        [value]="pickQuery()"
+        (input)="onPick($event)"
+      />
+      <ul class="codex-list">
+        @for (found of pickResults(); track found.id) {
+          <li class="codex-entry">
+            <codex-entry-card [entry]="found" [showWhen]="false" (opened)="pick(found.id)" />
+          </li>
+        }
+      </ul>
+      @if (!pickResults().length) {
+        <p class="codex-hint">Nothing matches. Entries are kept from the rail on the left.</p>
+      }
+      <button class="poe-btn poe-btn-dim" (click)="picking.set(null)">Cancel</button>
+    </div>
+  } @else if (isAdding(path)) {
+    <div class="codex-add-menu">
+      <button class="poe-btn poe-btn-dim" (click)="addKind(path, 'entry')">Entry</button>
+      <button class="poe-btn poe-btn-dim" (click)="addKind(path, 'text')">Text</button>
+      <button class="poe-btn poe-btn-dim" (click)="addKind(path, 'heading')">Heading</button>
+      <button class="poe-btn poe-btn-dim" (click)="addKind(path, 'query')">Live list</button>
+      <button class="poe-btn poe-btn-dim" (click)="addKind(path, 'columns')">Two columns</button>
+      <button class="poe-btn poe-btn-dim" (click)="addKind(path, 'divider')">Divider</button>
+      <button class="poe-btn poe-btn-dim" (click)="adding.set(null)">Cancel</button>
+    </div>
+  } @else {
+    <button class="codex-add" type="button" (click)="openAdd(path)">+ add</button>
+  }
+</ng-template>
+
+<div class="codex-page">
+  <div class="codex-page-head">
+    <input
+      class="codex-page-title"
+      type="text"
+      [value]="page().title"
+      (input)="rename($event)"
+    />
+    <div class="codex-density">
+      <button type="button" [class.on]="page().mode === 'curated'" (click)="setMode('curated')">
+        arranged
+      </button>
+      <button type="button" [class.on]="page().mode === 'query'" (click)="setMode('query')">
+        live
+      </button>
+    </div>
+    <div class="codex-density">
+      @for (mode of layouts; track mode) {
+        <button type="button" [class.on]="page().layout === mode" (click)="setLayout(mode)">
+          {{ mode }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (page().mode === 'query') {
+    <input
+      class="codex-search"
+      type="search"
+      placeholder="What this page answers — kind:strategy league:3.29 sort:perhour"
+      [value]="page().query ?? ''"
+      (input)="onQuery($event)"
+    />
+    <p class="codex-hint">
+      A live page. Nothing is placed by hand, so anything that answers this later shows up here
+      by itself.
+    </p>
+    <ul
+      class="codex-list"
+      [class.cards]="page().layout === 'cards'"
+      [class.table]="page().layout === 'table'"
+    >
+      @for (found of queryResults(); track found.id) {
+        <li class="codex-entry">
+          <codex-entry-card [entry]="found" [full]="page().layout === 'cards'" (opened)="toggleEntry(found.id)" />
+          @if (openEntry() === found.id) {
+            <codex-entry-editor
+              [entry]="found"
+              (saved)="saveEntry($event)"
+              (cancelled)="toggleEntry(found.id)"
+              (removed)="removeEntry($event)"
+            />
+          }
+        </li>
+      }
+    </ul>
+    @if (!queryResults().length) {
+      <p class="codex-hint">Nothing answers that yet.</p>
+    }
+  } @else {
+    @for (block of page().blocks; track $index; let i = $index) {
+      <div
+        class="codex-block"
+        draggable="true"
+        (dragstart)="dragStart([i])"
+        (dragover)="allowDrop($event)"
+        (drop)="drop([i], $event)"
+      >
+        <div class="codex-block-bar">
+          <span class="codex-grip" title="Drag to move">⠿</span>
+          <button type="button" title="Up" (click)="nudge([i], -1)">↑</button>
+          <button type="button" title="Down" (click)="nudge([i], 1)">↓</button>
+          <button type="button" title="Take off the page" (click)="remove([i])">&times;</button>
+        </div>
+
+        @if (block.t === 'columns') {
+          <div class="codex-cols">
+            @for (col of block.cols; track $index; let c = $index) {
+              <div
+                class="codex-col"
+                (dragover)="allowDrop($event)"
+                (drop)="drop([i, c, col.length], $event)"
+              >
+                @for (inner of col; track $index; let j = $index) {
+                  <div
+                    class="codex-block"
+                    draggable="true"
+                    (dragstart)="dragStart([i, c, j]); $event.stopPropagation()"
+                    (dragover)="allowDrop($event)"
+                    (drop)="drop([i, c, j], $event); $event.stopPropagation()"
+                  >
+                    <div class="codex-block-bar">
+                      <span class="codex-grip" title="Drag to move">⠿</span>
+                      <button type="button" title="Up" (click)="nudge([i, c, j], -1)">↑</button>
+                      <button type="button" title="Down" (click)="nudge([i, c, j], 1)">↓</button>
+                      <button type="button" title="Take off the page" (click)="remove([i, c, j])">
+                        &times;
+                      </button>
+                    </div>
+                    <ng-container
+                      *ngTemplateOutlet="blockView; context: { block: inner, path: [i, c, j] }"
+                    />
+                  </div>
+                }
+                <ng-container *ngTemplateOutlet="adder; context: { path: [i, c, col.length] }" />
+              </div>
+            }
+          </div>
+        } @else {
+          <ng-container *ngTemplateOutlet="blockView; context: { block: block, path: [i] }" />
+        }
+      </div>
+    }
+
+    <ng-container *ngTemplateOutlet="adder; context: { path: [page().blocks.length] }" />
+
+    @if (!page().blocks.length) {
+      <p class="codex-hint">
+        An empty page. <b>+ add</b> puts something on it — an entry from the library, a heading,
+        a note, or a live list that keeps itself up to date. Nothing here is a copy: an entry
+        placed on two pages is the same entry twice.
+      </p>
+    }
+  }
+</div>

@@ -2739,13 +2739,17 @@ a.strat-link-btn { text-decoration: none; }
 /* ============================================================
    CODEX
    ============================================================ */
+/* The rail is 300px, so the name gets its own line rather than being squeezed
+   to a slot too narrow to read what you typed. */
 .codex-new {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  margin-top: 10px;
 }
-.codex-new input { flex: 1; min-width: 0; }
-.codex-new .codex-league { flex: 0 0 110px; }
+.codex-new input { flex: 1 1 100%; min-width: 0; }
+.codex-new .codex-league { flex: 1 1 90px; }
 .codex-new .poe-btn { flex: 0 0 auto; }
 
 .codex-hint {
@@ -3154,4 +3158,224 @@ a.strat-link-btn { text-decoration: none; }
   flex: 1;
   height: 1px;
   background: var(--border);
+}
+
+/* The tree: docs, their pages, and the library itself as the first stop. */
+.codex-nav-lib {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 9px;
+  border: none;
+  border-radius: var(--inner-radius);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.codex-nav-lib small { color: var(--text-muted); font-size: 10px; }
+.codex-nav-lib.on { background: var(--selected); }
+
+.codex-tree-doc { margin-bottom: 8px; }
+.codex-tree-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 2px 4px 6px;
+}
+.codex-tree-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.codex-tree-league { color: var(--text-muted); font-size: 10px; }
+.codex-tree-head button {
+  padding: 0 3px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.codex-tree-head button:hover { color: var(--accent); }
+.codex-tree-head button:last-child:hover { color: var(--red); }
+
+.codex-tree-page {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 9px;
+  border: none;
+  border-left: 2px solid var(--border);
+  border-radius: 0 var(--inner-radius) var(--inner-radius) 0;
+  background: none;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.codex-tree-page:hover { color: var(--text); border-left-color: var(--accent-dim); }
+.codex-tree-page.on {
+  border-left-color: var(--accent);
+  background: var(--selected);
+  color: var(--text);
+}
+.codex-tree-page small { color: var(--text-muted); font-size: 10px; }
+.codex-tree-sub { padding-left: 22px; }
+.codex-tree-add {
+  margin: 2px 0 4px 22px;
+  padding: 2px 6px;
+  border: 1px dashed var(--border);
+  border-radius: var(--inner-radius);
+  background: none;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+.codex-tree-add:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+/* A page and its blocks. The controls sit above each block rather than beside
+   it: a column can be narrow, and a row of buttons in the margin is the first
+   thing to fall off when it is. */
+.codex-page-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.codex-page-title {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px 10px !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 18px !important;
+  letter-spacing: 0.04em;
+}
+.codex-page-foot {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.codex-block {
+  position: relative;
+  margin-bottom: 6px;
+  padding: 4px 0;
+  border-radius: var(--inner-radius);
+}
+.codex-block:hover { background: rgba(var(--fg-rgb),0.02); }
+.codex-block-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.codex-block:hover > .codex-block-bar { opacity: 1; }
+.codex-block-bar button {
+  padding: 0 5px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.codex-block-bar button:hover { color: var(--accent); }
+.codex-block-bar button:last-child:hover { color: var(--red); }
+.codex-grip {
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: grab;
+}
+
+.codex-block-heading {
+  padding: 4px 0 !important;
+  border: none !important;
+  background: none !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 15px !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-bright) !important;
+}
+.codex-block-text {
+  border: none !important;
+  background: rgba(var(--fg-rgb),0.02) !important;
+  font-size: 14px !important;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Two columns, which is what both source documents turn into by hand within a
+   few rows of starting. */
+.codex-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.codex-col {
+  min-width: 0;
+  min-height: 60px;
+  padding: 6px;
+  border: 1px dashed var(--border);
+  border-radius: var(--inner-radius);
+}
+
+.codex-live { padding: 2px 0; }
+.codex-live-q {
+  margin-bottom: 6px;
+  padding: 5px 9px !important;
+  font-family: 'Consolas', 'Courier New', monospace !important;
+  font-size: 12px !important;
+}
+
+.codex-add {
+  width: 100%;
+  padding: 5px;
+  border: 1px dashed var(--border);
+  border-radius: var(--inner-radius);
+  background: none;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.codex-add:hover { color: var(--accent); border-color: var(--accent-dim); }
+.codex-add-menu,
+.codex-pick {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--inner-radius);
+  background: var(--bg-well);
+}
+.codex-add-menu { display: flex; flex-wrap: wrap; gap: 6px; }
+.codex-add-menu .poe-btn { padding: 5px 10px; }
+.codex-pick input { margin-bottom: 8px; }
+.codex-pick .codex-list { max-height: 260px; overflow-y: auto; margin-bottom: 8px; }
+.codex-missing { color: var(--warn); }
+
+@media (max-width: 760px) {
+  .codex-cols { grid-template-columns: minmax(0, 1fr); }
 }
