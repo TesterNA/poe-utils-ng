@@ -12,6 +12,7 @@
     "test:summary": "node scripts/atlas-summary.mjs",
     "test:regex": "node scripts/regex-range.mjs",
     "test:sync": "node scripts/sync-merge.mjs",
+    "test:codex": "node scripts/codex-store.mjs",
     "test:api": "node scripts/api-load.mjs",
     "fetch:strategy": "node scripts/fetch-strategy-items.mjs",
     "fetch:atlas-stats": "node scripts/fetch-atlas-stats.mjs"

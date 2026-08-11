@@ -1,0 +1,92 @@
+<poe-tool-page
+  heading="Codex"
+  subtitle="Links, notes, builds, atlases and strategies — in one place instead of a spreadsheet"
+  [pips]="[true, true, false]"
+>
+  <poe-card maxWidth="760px">
+    @if (store.error()) {
+      <div class="codex-error">{{ store.error() }}</div>
+    }
+
+    <div class="section-label">New doc</div>
+    <div class="codex-new">
+      <input
+        type="text"
+        placeholder="Name this doc..."
+        autocomplete="off"
+        [value]="title()"
+        (input)="onTitle($event)"
+        (keydown.enter)="create()"
+      />
+      <input
+        class="codex-league"
+        type="text"
+        placeholder="League"
+        autocomplete="off"
+        title="A doc is not tied to a league — this is just a label, and clearing it is fine"
+        [value]="league()"
+        (input)="onLeague($event)"
+        (keydown.enter)="create()"
+      />
+      <button class="poe-btn poe-btn-dim" [disabled]="!canCreate()" (click)="create()">
+        Create
+      </button>
+    </div>
+    <p class="codex-hint">
+      The league is a label, not a folder. A doc can cover one league, several, or none —
+      it only decides what shows up when you filter.
+    </p>
+
+    <div class="poe-divider">
+      <div class="poe-divider-line"></div>
+      <div class="poe-diamond"></div>
+      <div class="poe-divider-line"></div>
+    </div>
+
+    @if (!store.ready() && !store.error()) {
+      <p class="codex-hint">Opening…</p>
+    } @else if (docs().length) {
+      <ul class="codex-docs">
+        @for (doc of docs(); track doc.id) {
+          <li class="codex-doc">
+            <div class="codex-doc-main">
+              <span class="codex-doc-title">{{ doc.title }}</span>
+              <small>
+                @if (doc.league) {
+                  {{ doc.league }} ·
+                }
+                @if (doc.game === 'poe2') {
+                  <span class="codex-poe2">PoE 2</span> ·
+                }
+                {{ count(pagesIn(doc), 'page') }} · edited {{ when(doc.updatedAt) }}
+              </small>
+            </div>
+            <button type="button" title="Delete" (click)="remove(doc)">&times;</button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="codex-hint">
+        Nothing here yet. A doc is a set of pages; the pages arrange entries, and an entry —
+        a link, a note, a strategy — belongs to the library rather than to the page it sits on,
+        so the same one can appear in as many places as it earns.
+      </p>
+    }
+
+    @if (store.ready()) {
+      <div class="codex-status">
+        <span>
+          {{ count(docs().length, 'doc') }} · {{ count(store.entries().length, 'entry') }} ·
+          {{ count(store.assetCount(), 'image') }}
+        </span>
+        @if (storageLine()) {
+          <span class="codex-status-dim">{{ storageLine() }}</span>
+        }
+      </div>
+      <p class="codex-hint">
+        All of it is in this browser and nowhere else. That is not a backup — it is per browser,
+        per device, and clearing site data takes it with everything else.
+      </p>
+    }
+  </poe-card>
+</poe-tool-page>

@@ -2735,3 +2735,111 @@ a.strat-link-btn { text-decoration: none; }
   gap: 14px;
   flex-wrap: wrap;
 }
+
+/* ============================================================
+   CODEX
+   ============================================================ */
+.codex-new {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.codex-new input { flex: 1; min-width: 0; }
+.codex-new .codex-league { flex: 0 0 110px; }
+.codex-new .poe-btn { flex: 0 0 auto; }
+
+.codex-hint {
+  margin: 10px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.codex-error {
+  margin: 0 0 12px;
+  padding: 8px 11px;
+  border-left: 2px solid var(--red);
+  background: rgba(var(--red-rgb),0.08);
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* One row per doc. The saved-build row next door is a name and a code; a doc
+   carries a league, a page count and when it was last touched, so it gets its
+   own rule rather than bending that one out of shape. */
+.codex-docs {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.codex-doc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 0;
+  border-left: 3px solid var(--border);
+  border-radius: var(--inner-radius);
+  background: var(--bg-input);
+}
+.codex-doc:hover { border-left-color: var(--accent); }
+.codex-doc-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 7px 10px;
+}
+.codex-doc-title {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.codex-doc-main small {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.codex-doc > button:last-child {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.codex-doc > button:last-child:hover { color: var(--red); }
+
+/* PoE 2 is a different game with a different atlas and different items, and a
+   doc will hold both. The marker has to be readable out of the corner of an
+   eye, so it does not borrow the colour tags use. */
+.codex-poe2 {
+  display: inline-block;
+  padding: 0 5px;
+  border: 1px solid rgba(var(--warn-rgb),0.55);
+  border-radius: 4px;
+  background: rgba(var(--warn-rgb),0.12);
+  color: var(--warn);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.codex-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.codex-status-dim { color: var(--text-muted); }

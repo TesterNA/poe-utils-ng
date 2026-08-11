@@ -365,6 +365,43 @@ atlas one does.
 with an emoji, and item codes past one varint byte), the three rules, the version arithmetic, and
 the shipped data itself: distinct codes, distinct ids, every named icon actually present.
 
+## Codex
+
+The doc every player keeps in a spreadsheet — links, notes, videos, builds, farming strategies,
+atlases, screenshots — with the parts that a spreadsheet cannot hold. Three real ones were taken
+apart to design it; what they are and what the model owes each of them is in
+[docs/codex-plan.md](docs/codex-plan.md).
+
+The shape is two layers. An **entry** is a thing you wrote down — a link, a note, a strategy, a
+screenshot — and it belongs to a library. A **page** only arranges entries it does not own, so the
+same filter link sits on this league's doc and on the permanent one, is edited in one place, and
+survives the page being deleted. That is the one thing a spreadsheet cannot do, and it is the reason
+this is not one.
+
+Nothing beyond a title is required. The documents this replaces are full of half-written
+strategies — a scarab line, an imgur link, no tree — so an atlas is our own share code, somebody
+else's planner link, a screenshot, or all three at once, and a strategy whose scarabs are the
+sentence "2 доп легиона и 1 офицер" is a strategy. What our own codes buy is a card that can be
+read: points, keystones and mechanics come off a snapshot taken at save time, because `tree.json` is
+1.5 MB and a list of twenty strategies cannot each ask the tree what they contain.
+
+Storage is IndexedDB, which is the one place in this project where that is the right way round: the
+screenshots in those documents run 160–200 KB each, and localStorage is ~5 MB for the whole origin
+and shared with the atlas and strategy libraries. Blobs go in as Blobs.
+
+Records are versioned individually and migrated **on read** (`codex-schema.ts`) rather than in an
+`onupgradeneeded`: a failed upgrade transaction takes the database with it, a failed read takes one
+row. A record written by a newer build is refused rather than read with older rules — reads are
+non-destructive, so it waits in place instead of being written back with its unknown fields dropped.
+Deletes are soft for the same reason the sync uses tombstones: absence cannot mean deletion.
+
+`npm run test:codex` covers the readers (what is kept, what is dropped, what defaults are filled),
+tag normalisation, the atlas and strategy sources at every resolution they arrive in, the migration
+chain being complete, and the export bundle round trip.
+
+So far this is the frame: the drawer opens and docs go in. Entries, pages, search and the rest are
+phases 1 onward in the plan.
+
 ## Accounts and sync
 
 Everything above works signed out, on whatever the browser has saved. An account exists for one
