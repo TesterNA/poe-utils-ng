@@ -3,90 +3,347 @@
   subtitle="Links, notes, builds, atlases and strategies — in one place instead of a spreadsheet"
   [pips]="[true, true, false]"
 >
-  <poe-card maxWidth="760px">
-    @if (store.error()) {
-      <div class="codex-error">{{ store.error() }}</div>
-    }
+  @if (store.error()) {
+    <div class="codex-error">{{ store.error() }}</div>
+  }
 
-    <div class="section-label">New doc</div>
-    <div class="codex-new">
-      <input
-        type="text"
-        placeholder="Name this doc..."
-        autocomplete="off"
-        [value]="title()"
-        (input)="onTitle($event)"
-        (keydown.enter)="create()"
-      />
-      <input
-        class="codex-league"
-        type="text"
-        placeholder="League"
-        autocomplete="off"
-        title="A doc is not tied to a league — this is just a label, and clearing it is fine"
-        [value]="league()"
-        (input)="onLeague($event)"
-        (keydown.enter)="create()"
-      />
-      <button class="poe-btn poe-btn-dim" [disabled]="!canCreate()" (click)="create()">
-        Create
-      </button>
+  <div class="codex-grid">
+    <!-- ---------------------------------------------------------------- rail -->
+    <div class="codex-rail">
+      <poe-card [divider]="false">
+        <div class="section-label">Keep something</div>
+        <textarea
+          class="codex-capture"
+          rows="3"
+          placeholder="Paste a link, a list of links, or anything worth writing down…"
+          [value]="captureText()"
+          (input)="onCapture($event)"
+        ></textarea>
+        <button
+          class="poe-btn poe-btn-dim codex-btn-wide"
+          [disabled]="!captureText().trim()"
+          (click)="keep()"
+        >
+          Keep
+        </button>
+        @if (captureMessage()) {
+          <p class="codex-hint">{{ captureMessage() }}</p>
+        } @else {
+          <p class="codex-hint">
+            One line per entry. <b>Label: link</b> keeps the label as the title, and the site
+            decides what the link is for — a PoB, a video, a filter.
+          </p>
+        }
+      </poe-card>
+
+      <poe-card [divider]="false">
+        <div class="section-label">Docs</div>
+        <div class="codex-new">
+          <input
+            type="text"
+            placeholder="Name this doc..."
+            autocomplete="off"
+            [value]="title()"
+            (input)="onTitle($event)"
+            (keydown.enter)="create()"
+          />
+          <input
+            class="codex-league"
+            type="text"
+            placeholder="League"
+            autocomplete="off"
+            title="A doc is not tied to a league — this is a label, and clearing it is fine"
+            [value]="league()"
+            (input)="onLeague($event)"
+            (keydown.enter)="create()"
+          />
+          <button class="poe-btn poe-btn-dim" [disabled]="!canCreate()" (click)="create()">
+            Create
+          </button>
+        </div>
+        @if (docs().length) {
+          <ul class="codex-docs">
+            @for (doc of docs(); track doc.id) {
+              <li class="codex-doc">
+                <div class="codex-doc-main">
+                  <span class="codex-doc-title">{{ doc.title }}</span>
+                  <small>
+                    @if (doc.league) {
+                      {{ doc.league }} ·
+                    }
+                    {{ count(pagesIn(doc), 'page') }} · edited {{ when(doc.updatedAt) }}
+                  </small>
+                </div>
+                <button type="button" title="Delete" (click)="removeDoc(doc)">&times;</button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="codex-hint">
+            No docs yet. Entries do not need one — a doc is for arranging them, and that arrives
+            with pages.
+          </p>
+        }
+      </poe-card>
+
+      @if (store.views().length) {
+        <poe-card [divider]="false">
+          <div class="section-label">Saved searches</div>
+          <ul class="codex-views">
+            @for (view of store.views(); track view.id) {
+              <li class="codex-view">
+                <button type="button" (click)="setQuery(view.query)" [title]="view.query">
+                  {{ view.name }}
+                </button>
+                <button type="button" title="Delete" (click)="store.remove('views', view.id)">
+                  &times;
+                </button>
+              </li>
+            }
+          </ul>
+        </poe-card>
+      }
+
+      @if (visibleTags().length) {
+        <poe-card [divider]="false">
+          <div class="section-label">Tags</div>
+          <div class="codex-tags">
+            @for (tag of visibleTags(); track tag[0]) {
+              <button
+                type="button"
+                class="codex-tag"
+                [class.on]="active('tag:' + tag[0])"
+                (click)="toggle('tag:' + tag[0])"
+              >
+                {{ tag[0] }}<small>{{ tag[1] }}</small>
+              </button>
+            }
+          </div>
+        </poe-card>
+      }
     </div>
-    <p class="codex-hint">
-      The league is a label, not a folder. A doc can cover one league, several, or none —
-      it only decides what shows up when you filter.
-    </p>
 
-    <div class="poe-divider">
-      <div class="poe-divider-line"></div>
-      <div class="poe-diamond"></div>
-      <div class="poe-divider-line"></div>
-    </div>
+    <!-- ------------------------------------------------------------- library -->
+    <div class="codex-main">
+      <poe-card [divider]="false">
+        <input
+          class="codex-search"
+          type="search"
+          placeholder="Search — words, #tag, kind:strategy, has:runs, sort:perhour…"
+          autocomplete="off"
+          [value]="query()"
+          (input)="onQuery($event)"
+        />
 
-    @if (!store.ready() && !store.error()) {
-      <p class="codex-hint">Opening…</p>
-    } @else if (docs().length) {
-      <ul class="codex-docs">
-        @for (doc of docs(); track doc.id) {
-          <li class="codex-doc">
-            <div class="codex-doc-main">
-              <span class="codex-doc-title">{{ doc.title }}</span>
-              <small>
-                @if (doc.league) {
-                  {{ doc.league }} ·
-                }
-                @if (doc.game === 'poe2') {
-                  <span class="codex-poe2">PoE 2</span> ·
-                }
-                {{ count(pagesIn(doc), 'page') }} · edited {{ when(doc.updatedAt) }}
-              </small>
+        <div class="codex-quick">
+          @for (shortcut of quick; track shortcut.label) {
+            <button
+              type="button"
+              class="codex-chip"
+              [class.on]="query() === shortcut.query"
+              [title]="shortcut.title"
+              (click)="setQuery(shortcut.query)"
+            >
+              {{ shortcut.label }}
+            </button>
+          }
+        </div>
+
+        <div class="codex-toolbar">
+          <span class="codex-count">
+            {{ count(results().length, 'entry') }}
+            @if (results().length !== store.entries().length) {
+              of {{ store.entries().length }}
+            }
+          </span>
+          <div class="codex-density">
+            @for (mode of ['list', 'cards', 'table']; track mode) {
+              <button
+                type="button"
+                [class.on]="layout() === mode"
+                (click)="setLayout($any(mode))"
+              >
+                {{ mode }}
+              </button>
+            }
+          </div>
+          <div class="codex-density" title="Cut the list into sections">
+            @for (key of groupKeys; track key) {
+              <button type="button" [class.on]="group() === key" (click)="setGroup(key)">
+                {{ key === 'none' ? 'flat' : key }}
+              </button>
+            }
+          </div>
+          @if (query().trim()) {
+            <div class="codex-save-view">
+              <input
+                type="text"
+                placeholder="Save this search as…"
+                autocomplete="off"
+                [value]="viewName()"
+                (input)="onViewName($event)"
+                (keydown.enter)="saveView()"
+              />
+              <button class="poe-btn poe-btn-dim" [disabled]="!viewName().trim()" (click)="saveView()">
+                Save
+              </button>
             </div>
-            <button type="button" title="Delete" (click)="remove(doc)">&times;</button>
-          </li>
-        }
-      </ul>
-    } @else {
-      <p class="codex-hint">
-        Nothing here yet. A doc is a set of pages; the pages arrange entries, and an entry —
-        a link, a note, a strategy — belongs to the library rather than to the page it sits on,
-        so the same one can appear in as many places as it earns.
-      </p>
-    }
+          }
+        </div>
+      </poe-card>
 
-    @if (store.ready()) {
-      <div class="codex-status">
-        <span>
-          {{ count(docs().length, 'doc') }} · {{ count(store.entries().length, 'entry') }} ·
-          {{ count(store.assetCount(), 'image') }}
-        </span>
-        @if (storageLine()) {
-          <span class="codex-status-dim">{{ storageLine() }}</span>
+      <poe-card [divider]="false">
+        @if (!store.ready()) {
+          <p class="codex-hint">Opening…</p>
+        } @else if (!results().length) {
+          <p class="codex-hint">
+            @if (store.entries().length) {
+              Nothing matches that. <b>-</b> in front of any term drops it instead
+              (<b>-tag:dead</b>), and <b>is:untagged</b> finds what was never filed.
+            } @else {
+              Nothing kept yet. Paste a link into the box on the left — a PoB, a filter, an
+              imgur screenshot of somebody's tree — and it becomes an entry you can tag and
+              find again.
+            }
+          </p>
+        } @else {
+          @for (section of groups(); track section.label) {
+            @if (section.label) {
+              <div class="codex-group">
+                <span class="codex-group-name">{{ section.label }}</span>
+                <span class="codex-group-count">{{ section.entries.length }}</span>
+              </div>
+            }
+            <ul class="codex-list" [class.cards]="layout() === 'cards'" [class.table]="layout() === 'table'">
+            @for (entry of section.entries; track entry.id) {
+              <li
+                class="codex-entry"
+                [class.open]="draft()?.id === entry.id && openIn() === section.label"
+              >
+                <div class="codex-entry-row">
+                  <button type="button" class="codex-entry-main" (click)="open(entry, section.label)">
+                    <span class="codex-entry-title">
+                      @if (entry.game === 'poe2') {
+                        <span class="codex-poe2">PoE 2</span>
+                      }
+                      @if (entry.pinned) {
+                        <span class="codex-pin" title="Pinned">★</span>
+                      }
+                      {{ entry.title || '(untitled)' }}
+                    </span>
+                    <small class="codex-entry-sub">{{ subtitle(entry) }}</small>
+                    @if (layout() === 'cards' && excerpt(entry)) {
+                      <span class="codex-entry-body">{{ excerpt(entry) }}</span>
+                    }
+                    @if (entry.tags.length) {
+                      <span class="codex-entry-tags">
+                        @for (tag of entry.tags; track tag) {
+                          <span class="codex-tag-chip">{{ tag }}</span>
+                        }
+                      </span>
+                    }
+                  </button>
+                  @if (url(entry)) {
+                    <a
+                      class="codex-entry-open"
+                      [href]="url(entry)"
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Open in a new tab"
+                      >↗</a
+                    >
+                  }
+                  <span class="codex-entry-when">{{ when(entry.updatedAt) }}</span>
+                </div>
+
+                @if (draft(); as d) {
+                  @if (d.id === entry.id && openIn() === section.label) {
+                    <div class="codex-editor">
+                      <div class="poe-field">
+                        <label class="poe-field-label">Title</label>
+                        <input type="text" [value]="d.title" (input)="patch('title', $event)" />
+                      </div>
+                      @if (d.data.k === 'link') {
+                        <div class="poe-field">
+                          <label class="poe-field-label">Link</label>
+                          <input type="text" [value]="d.data.url" (input)="patch('url', $event)" />
+                        </div>
+                      }
+                      <div class="poe-field">
+                        <label class="poe-field-label">Notes</label>
+                        <textarea rows="4" [value]="d.body" (input)="patch('body', $event)"></textarea>
+                      </div>
+                      <div class="poe-field">
+                        <label class="poe-field-label">Tags</label>
+                        <input
+                          type="text"
+                          placeholder="legion worb day-1 — or commas, if a tag has a space"
+                          [value]="draftTags()"
+                          (input)="onDraftTags($event)"
+                        />
+                      </div>
+                      <div class="codex-editor-row">
+                        <div class="poe-field">
+                          <label class="poe-field-label">League</label>
+                          <input
+                            type="text"
+                            [value]="d.league ?? ''"
+                            (input)="patch('league', $event)"
+                          />
+                        </div>
+                        <div class="poe-field">
+                          <label class="poe-field-label">Status</label>
+                          <select [value]="d.status ?? ''" (change)="patch('status', $event)">
+                            <option value="">—</option>
+                            <option value="live">live</option>
+                            <option value="draft">draft</option>
+                            <option value="tbc">tbc</option>
+                            <option value="dead">dead</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="codex-editor-actions">
+                        <button class="poe-btn poe-btn-dim" (click)="saveDraft()">Save</button>
+                        <button class="poe-btn poe-btn-dim" (click)="close()">Cancel</button>
+                        <button
+                          class="poe-btn poe-btn-dim"
+                          [class.on]="d.game === 'poe2'"
+                          title="Mark this as Path of Exile 2 — it shows up first on the card"
+                          (click)="togglePoe2()"
+                        >
+                          PoE 2
+                        </button>
+                        <button class="poe-btn poe-btn-dim" (click)="togglePinned()">
+                          {{ d.pinned ? 'Unpin' : 'Pin' }}
+                        </button>
+                        <button class="poe-btn poe-btn-red" (click)="removeEntry(entry)">
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  }
+                }
+              </li>
+            }
+            </ul>
+          }
         }
-      </div>
-      <p class="codex-hint">
-        All of it is in this browser and nowhere else. That is not a backup — it is per browser,
-        per device, and clearing site data takes it with everything else.
-      </p>
-    }
-  </poe-card>
+      </poe-card>
+
+      @if (store.ready()) {
+        <div class="codex-status">
+          <span>
+            {{ count(docs().length, 'doc') }} · {{ count(store.entries().length, 'entry') }} ·
+            {{ count(store.assetCount(), 'image') }}
+          </span>
+          @if (storageLine()) {
+            <span class="codex-status-dim">{{ storageLine() }}</span>
+          }
+          <span class="codex-status-dim">
+            In this browser and nowhere else — not a backup.
+          </span>
+        </div>
+      }
+    </div>
+  </div>
 </poe-tool-page>

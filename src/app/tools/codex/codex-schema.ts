@@ -70,6 +70,17 @@ export function normaliseTag(raw: string): string {
     .slice(0, MAX_TAG);
 }
 
+/**
+ * What somebody typed into a tag field.
+ *
+ * A comma anywhere means the commas are the separator, so a tag can have a
+ * space in it — "день 1, легион" is two tags and not four. Without one, spaces
+ * separate, because typing `legion worb day-1` is faster than punctuating it.
+ */
+export function parseTagInput(text: string): string[] {
+  return normaliseTags(text.split(text.includes(',') ? ',' : /\s+/));
+}
+
 /** Order is the order they were written in; duplicates fold into the first. */
 export function normaliseTags(raw: readonly unknown[]): string[] {
   const out: string[] = [];

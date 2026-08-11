@@ -23,17 +23,24 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tmp = path.join(root, 'node_modules', '.codex-test');
 
 await mkdir(tmp, { recursive: true });
-const outfile = path.join(tmp, 'codex-schema.mjs');
-await build({
-  entryPoints: [path.join(root, 'src/app/tools/codex/codex-schema.ts')],
-  outfile,
-  bundle: true,
-  format: 'esm',
-  platform: 'neutral',
-  target: 'es2022',
-  logLevel: 'warning',
-});
-const schema = await import(pathToFileURL(outfile).href);
+async function load(name) {
+  const outfile = path.join(tmp, `${name}.mjs`);
+  await build({
+    entryPoints: [path.join(root, 'src/app/tools/codex', `${name}.ts`)],
+    outfile,
+    bundle: true,
+    format: 'esm',
+    platform: 'neutral',
+    target: 'es2022',
+    logLevel: 'warning',
+  });
+  return import(pathToFileURL(outfile).href);
+}
+
+const schema = await load('codex-schema');
+const query = await load('codex-query');
+const capture = await load('codex-capture');
+const metrics = await load('codex-metrics');
 const {
   SCHEMA,
   BUNDLE_VERSION,
@@ -45,6 +52,7 @@ const {
   normaliseTag,
   normaliseTags,
   packBundle,
+  parseTagInput,
   readAll,
   readBundle,
   readDoc,
@@ -92,6 +100,12 @@ check('tags: dedupe keeps first order', normaliseTags(['Breach', '#breach', 'leg
   'legion',
 ]);
 check('tags: junk is skipped', normaliseTags(['ok', 3, null, '', '#']), ['ok']);
+
+// What somebody types into the tag field. A comma anywhere means commas are the
+// separator, because that is the only way a tag can hold a space.
+check('tag input: spaces separate', parseTagInput('worb leveling Day'), ['worb', 'leveling', 'day']);
+check('tag input: a comma changes its mind', parseTagInput('день 1, легион'), ['день-1', 'легион']);
+check('tag input: nothing is nothing', parseTagInput('   '), []);
 
 // --- what a reader keeps and what it drops ------------------------------------
 
@@ -291,8 +305,219 @@ check(
 
 // --- ids ----------------------------------------------------------------------
 
-const ids = new Set(Array.from({ length: 2000 }, () => newId()));
-check('ids: two thousand of them are two thousand', ids.size, 2000);
+const madeIds = new Set(Array.from({ length: 2000 }, () => newId()));
+check('ids: two thousand of them are two thousand', madeIds.size, 2000);
 
-console.log(failures ? `\n${failures} failed` : 'codex schema, migration and bundles: all checks passed');
+// --- capture ------------------------------------------------------------------
+// This is how a Codex fills up, and it is reading lines written by somebody who
+// was not thinking about us. All of the shapes below are copied from the three
+// documents the feature was designed against.
+
+const { capture: grab, captureOne, filterInfoOf, noteBody, roleOf } = capture;
+
+check('capture: a label and a link split at the colon', captureOne('ендгейм поба: https://pobb.in/cd6A9tg8QjrJ'), {
+  kind: 'link',
+  title: 'ендгейм поба',
+  data: { k: 'link', url: 'https://pobb.in/cd6A9tg8QjrJ', host: 'pobb.in', role: 'pob' },
+});
+check(
+  'capture: no label, so the link names itself',
+  captureOne('https://pobb.in/cd6A9tg8QjrJ').title,
+  'pobb.in/cd6A9tg8QjrJ',
+);
+check(
+  'capture: a full stop after a link is punctuation, not path',
+  captureOne('see https://poe.ninja/poe1/pob/930ab.').data.url,
+  'https://poe.ninja/poe1/pob/930ab',
+);
+check('capture: no link at all is a note', captureOne('помыть посуду').kind, 'note');
+check(
+  'capture: a list is a list',
+  grab(
+    [
+      'Левелинг поба: https://pobb.in/Lt3xXcXzAp10',
+      'Видос по билду: https://www.youtube.com/watch?v=--XDhqSlwPA',
+      'Атлас https://imgur.com/a/ESqXHhf',
+    ].join('\n'),
+  ).map((item) => `${item.title}|${item.data.role}`),
+  ['Левелинг поба|pob', 'Видос по билду|video', 'Атлас|image'],
+);
+check(
+  'capture: a paragraph with no links is one note, not four',
+  grab('день4\nЛегион висп немезис\nскарабы: 2 легион\nпрофит 14 в час').length,
+  1,
+);
+check(
+  'capture: and it keeps the rest as the note',
+  noteBody('день4\nЛегион висп немезис\nскарабы: 2 легион'),
+  'Легион висп немезис\nскарабы: 2 легион',
+);
+
+check('role: poe.ninja is a PoB or a profile by path', roleOf('https://poe.ninja/poe1/pob/930ab'), 'pob');
+check(
+  'role: ...and a profile the other way',
+  roleOf('https://poe.ninja/poe1/profile/Niko1963-4012/character/Kankar_VenomGyre'),
+  'profile',
+);
+check(
+  'role: pathofexile.com splits the same way',
+  roleOf('https://www.pathofexile.com/account/view-profile/Madara-2149/item-filters'),
+  'filter',
+);
+check('role: an unknown site is left alone', roleOf('https://example.com/x'), undefined);
+
+check(
+  'filter: the saveState is what tells two of them apart',
+  filterInfoOf(
+    'https://www.filterblade.xyz/?profile=madaraxgod&saveState=F1MGCRL8A9YRHM&isPreset=false&game=Poe1',
+    'madara endgame mapping',
+  ),
+  { site: 'filterblade', profile: 'madaraxgod', saveState: 'F1MGCRL8A9YRHM', stage: 'endgame', game: 'poe1' },
+);
+check(
+  'filter: a profile to subscribe to is a filter too',
+  filterInfoOf('https://www.pathofexile.com/account/view-profile/Madara-2149/item-filters'),
+  { site: 'poe-profile', profile: 'Madara-2149' },
+);
+
+// --- the query ----------------------------------------------------------------
+
+const { parseQuery, runQuery, toggleTerm, placedIds } = query;
+
+const made = (id, extra = {}) => ({
+  ...newEntry(extra.kind ?? 'note', extra.title ?? id, extra.data ?? { k: 'note' }),
+  id,
+  tags: extra.tags ?? [],
+  updatedAt: extra.updatedAt ?? 1,
+  createdAt: 1,
+  ...(extra.league ? { league: extra.league } : {}),
+  ...(extra.game ? { game: extra.game } : {}),
+  ...(extra.status ? { status: extra.status } : {}),
+  ...(extra.runs ? { runs: extra.runs } : {}),
+  ...(extra.body ? { body: extra.body } : {}),
+});
+
+const strategy = (id, src, extra = {}) =>
+  made(id, { kind: 'strategy', data: { k: 'strategy', src }, ...extra });
+
+const library = [
+  made('note1', { title: 'Legion notes', tags: ['legion', 'day-1'], body: 'run dunes', updatedAt: 5 }),
+  made('link1', {
+    kind: 'link',
+    title: 'Endgame filter',
+    data: {
+      k: 'link',
+      url: 'https://www.filterblade.xyz/?profile=x&saveState=y',
+      host: 'filterblade.xyz',
+      role: 'filter',
+      filter: { site: 'filterblade', stage: 'endgame' },
+    },
+    updatedAt: 4,
+  }),
+  strategy(
+    'strat1',
+    { picksText: '5x Cloister', map: '8-mod Dunes' },
+    { title: 'Cloister farm', tags: ['legion'], league: '3.29', updatedAt: 3, runs: [{ id: 'r', at: 0, minutes: 60, investDiv: 2, revenueDiv: 14 }] },
+  ),
+  strategy(
+    'strat2',
+    { snapshot: { treeVersion: 1, slots: 4, picks: [{ code: 1, count: 2, name: 'Breach Scarab of Splintering', icon: '' }], points: 132, keystones: ['Wandering Path'], issues: [] } },
+    { title: 'Breach', league: '3.28', updatedAt: 2, status: 'dead' },
+  ),
+  made('poe2', { title: 'PoE2 filter', game: 'poe2', tags: ['filters'], updatedAt: 1 }),
+  made('loose', { title: 'Boss rush', updatedAt: 0 }),
+];
+
+const ids = (q, ctx) => runQuery(library, parseQuery(q), ctx).map((entry) => entry.id);
+
+check('query: nothing asked, everything answered — except the dead', ids(''), [
+  'note1',
+  'link1',
+  'strat1',
+  'poe2',
+  'loose',
+]);
+check('query: dead comes back the moment you ask about it', ids('status:dead'), ['strat2']);
+check('query: a word looks everywhere readable', ids('dunes'), ['note1', 'strat1']);
+check('query: a tag is exact', ids('#legion'), ['note1', 'strat1']);
+check('query: negation drops', ids('#legion -kind:strategy'), ['note1']);
+check('query: kind', ids('kind:strategy'), ['strat1']);
+check('query: role', ids('role:filter'), ['link1']);
+check('query: stage', ids('stage:endgame'), ['link1']);
+check('query: league', ids('league:3.29'), ['strat1']);
+check('query: poe1 means "not marked poe2"', ids('game:poe1').includes('poe2'), false);
+check('query: poe2 is explicit', ids('game:poe2'), ['poe2']);
+check('query: scarabs by name, whether written or picked', ids('scarab:cloister'), ['strat1']);
+check('query: and inside a snapshot', ids('scarab:splintering status:dead'), ['strat2']);
+check('query: keystones', ids('node:"wandering path" status:dead'), ['strat2']);
+check('query: has:runs', ids('has:runs'), ['strat1']);
+check('query: is:untagged', ids('is:untagged'), ['link1', 'loose']);
+check(
+  'query: sort by what it paid',
+  runQuery(library, parseQuery('kind:strategy sort:perhour'), {}).map((e) => e.id),
+  ['strat1'],
+);
+check('query: sort by title reads A to Z', ids('sort:title'), ['loose', 'strat1', 'link1', 'note1', 'poe2']);
+check(
+  'query: a phrase is one term',
+  ids('"legion notes"'),
+  ['note1'],
+);
+check(
+  'query: a word with a colon we do not know is a word',
+  ids('filterblade.xyz'),
+  ['link1'],
+);
+
+// The Inbox: captured and not filed. Without pages that is "untagged", and it
+// narrows by itself once pages exist rather than needing a second definition.
+const pages = [
+  {
+    id: 'p1',
+    docId: 'd1',
+    blocks: [{ t: 'entry', id: 'link1' }, { t: 'columns', cols: [[{ t: 'entry', id: 'note1' }]] }],
+  },
+];
+check('pages: entry ids are found inside columns too', [...placedIds(pages)].sort(), ['link1', 'note1']);
+check('query: is:inbox is untagged and unplaced', ids('is:inbox', { placed: placedIds(pages) }), ['loose']);
+check('query: is:orphan is just unplaced', ids('is:orphan', { placed: placedIds(pages) }), ['strat1', 'poe2', 'loose']);
+
+check('toggle: adds a term', toggleTerm('kind:strategy', 'tag:legion'), 'kind:strategy tag:legion');
+check('toggle: and takes the same one away', toggleTerm('kind:strategy tag:legion', 'tag:legion'), 'kind:strategy');
+
+// --- measurements -------------------------------------------------------------
+// The whole reason one of the source documents is a separate spreadsheet of
+// screenshots: numbers in a cell cannot be divided by an hour.
+
+const { runTotals, perHourLabel } = metrics;
+check('runs: nothing measured is not zero divines an hour, it is nothing', perHourLabel(runTotals([])), '');
+check(
+  'runs: net over hours',
+  runTotals([{ id: 'a', at: 0, minutes: 60, investDiv: 2, revenueDiv: 14 }]).perHour,
+  12,
+);
+check(
+  'runs: several runs pool, so a lucky ten minutes cannot outvote two hours',
+  runTotals([
+    { id: 'a', at: 0, minutes: 10, investDiv: 0, revenueDiv: 10 },
+    { id: 'b', at: 0, minutes: 120, investDiv: 0, revenueDiv: 20 },
+  ]).perHour,
+  (30 * 60) / 130,
+);
+// Past ten divines an hour the tenth is noise; below it, it is the difference
+// between a strategy worth running and one that is not.
+check(
+  'runs: a small rate keeps its tenth',
+  perHourLabel(runTotals([{ id: 'a', at: 0, minutes: 60, investDiv: 0, revenueDiv: 4.44 }])),
+  '4.4 div/h',
+);
+check(
+  'runs: a large one does not',
+  perHourLabel(runTotals([{ id: 'a', at: 0, minutes: 60, investDiv: 0, revenueDiv: 12.44 }])),
+  '12 div/h',
+);
+
+console.log(
+  failures ? `\n${failures} failed` : 'codex schema, capture, query and measurements: all checks passed',
+);
 process.exit(failures ? 1 : 0);

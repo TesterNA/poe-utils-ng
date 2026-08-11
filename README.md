@@ -395,12 +395,47 @@ row. A record written by a newer build is refused rather than read with older ru
 non-destructive, so it waits in place instead of being written back with its unknown fields dropped.
 Deletes are soft for the same reason the sync uses tombstones: absence cannot mean deletion.
 
+### Keeping something
+
+One box takes whatever is on the clipboard. A line is `Label: link` — which is how every link list
+in every one of those documents is written, from "ендгейм поба:" to "Leveling Filter (for blight):"
+— so the label becomes the title and the host decides what the link is *for*: a PoB, a video, a
+filter, somebody's atlas planner, an imgur screenshot. A pasted list is one entry per line, stamped
+so it keeps the order it was pasted in; a paste with no link in it is one note whose first line is
+the title.
+
+Filters get taken apart rather than stored as a URL, because there are three of them per league and
+the only thing telling a levelling one from an endgame one is a `saveState` in a query string.
+
+### Finding it again
+
+The search box is the reason this is not a spreadsheet, which can only answer "is this string
+anywhere on this sheet". Words match everything readable — including scarab names out of a saved
+strategy — and the rest are fields:
+
+```
+#legion  tag:legion  -tag:dead        kind:strategy   role:filter  stage:endgame
+league:3.29  game:poe2  status:dead   diff:hard       scarab:cloister
+node:"Wandering Path"  has:runs has:image has:code    is:untagged is:orphan is:inbox
+sort:updated|created|title|points|perhour
+```
+
+Two rules are not syntax. A word with an unknown field in front of it is searched as text, colon and
+all, because half of what gets pasted here has a colon in it. And **dead things stay out unless you
+ask** — a strategy that stopped working is worth keeping and is not an answer to what to run
+tonight, so mentioning `status:` in any form hands the decision back to the query.
+
+Clicking a tag or a shortcut writes into the same box rather than filtering behind it, so what you
+learn by clicking is what you can then type. A search worth keeping gets a name and lands in the
+rail. The list groups by type, tag, league or status — grouping by tag lists an entry under each of
+its tags, because a strategy that is both `#legion` and `#day-1` is an answer to both questions.
+
 `npm run test:codex` covers the readers (what is kept, what is dropped, what defaults are filled),
 tag normalisation, the atlas and strategy sources at every resolution they arrive in, the migration
-chain being complete, and the export bundle round trip.
+chain being complete, the export bundle round trip, the capture rules against lines copied out of
+the source documents, every query operator, and the run arithmetic.
 
-So far this is the frame: the drawer opens and docs go in. Entries, pages, search and the rest are
-phases 1 onward in the plan.
+Pages are next: a page arranges these entries without owning them.
 
 ## Accounts and sync
 

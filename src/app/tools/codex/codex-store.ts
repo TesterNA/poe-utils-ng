@@ -13,10 +13,11 @@
  */
 import { computed, Injectable, signal } from '@angular/core';
 import { DEFAULT_TREE_VERSION, findTreeVersion } from '../atlas/tree-versions';
-import type { Doc, Entry, Page, SavedView } from './codex-types';
+import type { Doc, Entry, EntryData, EntryKind, Page, PageLayout, SavedView } from './codex-types';
 import type { CodexDriver, StorageUse, StoreName } from './codex-driver';
 import { LocalDriver } from './codex-db';
-import { newDoc } from './codex-schema';
+import { newDoc, newEntry, newView, normaliseTags } from './codex-schema';
+import { placedIds, tagCounts } from './codex-query';
 
 @Injectable({ providedIn: 'root' })
 export class CodexStore {
@@ -41,6 +42,14 @@ export class CodexStore {
    * that is wrong once a year beats an empty one that is wrong every time.
    */
   readonly currentLeague = computed(() => findTreeVersion(DEFAULT_TREE_VERSION)?.label ?? '');
+
+  /** Which entries sit on a page — what `is:orphan` and the Inbox are read off. */
+  readonly placed = computed(() => placedIds(this.pages()));
+
+  /** Every tag in use and how many carry it, for the list you filter by clicking. */
+  readonly tags = computed(() =>
+    [...tagCounts(this.entries())].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+  );
 
   private loading: Promise<void> | null = null;
 
@@ -92,6 +101,52 @@ export class CodexStore {
     if (!(await this.write(() => this.driver.putDoc(next)))) return false;
     this.docs.update((docs) => sortDocs(docs.map((d) => (d.id === next.id ? next : d))));
     return true;
+  }
+
+  /**
+   * Capture writes several entries at once — a pasted list is a list — so the
+   * signal is set once at the end rather than per entry, and a failure part way
+   * through keeps what did get written instead of pretending none of it did.
+   */
+  async addEntries(items: { kind: EntryKind; title: string; data: EntryData; body?: string }[]): Promise<Entry[]> {
+    const written: Entry[] = [];
+    // The list is newest first, so a pasted list stamped line by line comes out
+    // upside down, and one shared timestamp leaves the order to whatever
+    // IndexedDB hands back. So the batch is stamped a millisecond apart with
+    // the first line newest: the milliseconds inside one paste are not data,
+    // but the order somebody wrote the list in is.
+    const at = Date.now();
+    for (const [index, item] of items.entries()) {
+      const entry = {
+        ...newEntry(item.kind, item.title, item.data),
+        createdAt: at - index,
+        updatedAt: at - index,
+      };
+      if (item.body) entry.body = item.body;
+      if (!(await this.write(() => this.driver.putEntry(entry)))) break;
+      written.push(entry);
+    }
+    if (written.length) {
+      this.entries.update((entries) => [...written, ...entries]);
+      void this.refreshUsage();
+    }
+    return written;
+  }
+
+  async saveEntry(entry: Entry): Promise<boolean> {
+    const next: Entry = { ...entry, tags: normaliseTags(entry.tags), updatedAt: Date.now() };
+    if (!(await this.write(() => this.driver.putEntry(next)))) return false;
+    this.entries.update((entries) => entries.map((e) => (e.id === next.id ? next : e)));
+    return true;
+  }
+
+  async addView(name: string, query: string, layout: PageLayout): Promise<SavedView | null> {
+    const named = name.trim();
+    if (!named) return null;
+    const view = newView(named, query, layout);
+    if (!(await this.write(() => this.driver.putView(view)))) return null;
+    this.views.update((views) => [...views, view]);
+    return view;
   }
 
   async remove(store: StoreName, id: string): Promise<boolean> {
