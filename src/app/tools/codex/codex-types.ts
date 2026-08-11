@@ -149,7 +149,8 @@ export type EntryData =
     }
   | { k: 'note' }
   | { k: 'checklist'; items: { text: string; done: boolean }[] }
-  | { k: 'image'; assetId?: string; imageUrl?: string; w?: number; h?: number }
+  /** `assetId` is the full picture, `thumbId` the small one a card draws */
+  | { k: 'image'; assetId?: string; thumbId?: string; imageUrl?: string; w?: number; h?: number }
   | { k: 'table'; columns: string[]; rows: string[][] }
   | { k: 'atlas'; src: AtlasSource; points?: number }
   | { k: 'strategy'; src: StrategySource }

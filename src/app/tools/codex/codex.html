@@ -14,24 +14,36 @@
         <div class="section-label">Keep something</div>
         <textarea
           class="codex-capture"
+          [class.over]="over()"
           rows="3"
-          placeholder="Paste a link, a list of links, or anything worth writing down…"
+          placeholder="Paste a link, a list of links, a screenshot, or anything worth writing down…"
           [value]="captureText()"
           (input)="onCapture($event)"
+          (paste)="onPaste($event)"
+          (dragover)="onDragOver($event)"
+          (dragleave)="over.set(false)"
+          (drop)="onDrop($event)"
         ></textarea>
-        <button
-          class="poe-btn poe-btn-dim codex-btn-wide"
-          [disabled]="!captureText().trim()"
-          (click)="keep()"
-        >
-          Keep
-        </button>
+        <div class="codex-capture-row">
+          <button
+            class="poe-btn poe-btn-dim"
+            [disabled]="!captureText().trim() || busy()"
+            (click)="keep()"
+          >
+            Keep
+          </button>
+          <label class="codex-file" [class.busy]="busy()">
+            {{ busy() ? 'Shrinking…' : 'Picture' }}
+            <input type="file" accept="image/*" multiple (change)="onFiles($event)" />
+          </label>
+        </div>
         @if (captureMessage()) {
           <p class="codex-hint">{{ captureMessage() }}</p>
         } @else {
           <p class="codex-hint">
             One line per entry. <b>Label: link</b> keeps the label as the title, and the site
-            decides what the link is for — a PoB, a video, a filter.
+            decides what the link is for — a PoB, a video, a filter. A screenshot can be pasted
+            or dropped straight onto the box.
           </p>
         }
       </poe-card>
@@ -297,4 +309,20 @@
       }
     </div>
   </div>
+
+  <!-- The full picture. A card shows 46 pixels; the numbers on a loot tracker
+       are not readable at 46 pixels, and reading them is the point. -->
+  @if (store.lightbox(); as shown) {
+    <div class="codex-lightbox" (click)="store.lightbox.set(null)">
+      <div class="codex-lightbox-head">
+        <span>{{ shown.title }}</span>
+        <button type="button" (click)="store.lightbox.set(null)">&times;</button>
+      </div>
+      @if (shown.assetId) {
+        <codex-asset-img [assetId]="shown.assetId" [alt]="shown.title" />
+      } @else if (shown.url) {
+        <img [src]="shown.url" [alt]="shown.title" />
+      }
+    </div>
+  }
 </poe-tool-page>

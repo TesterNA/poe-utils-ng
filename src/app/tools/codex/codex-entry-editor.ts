@@ -7,7 +7,10 @@
  * made from a page is an edit everywhere the entry appears, which is the whole
  * reason pages do not own their contents.
  */
-import { Component, effect, input, output, signal } from '@angular/core';
+import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { CodexAssetImg } from './codex-asset-img';
+import { CodexStore } from './codex-store';
+import { imagesIn } from './codex-image';
 import type { AtlasSource, Entry, EntryKind } from './codex-types';
 import { hostOf, parseTagInput } from './codex-schema';
 
@@ -31,6 +34,7 @@ function anyUrl(entry: Entry): string {
 
 @Component({
   selector: 'codex-entry-editor',
+  imports: [CodexAssetImg],
   template: `
     @if (draft(); as d) {
       <div class="codex-editor">
@@ -151,6 +155,36 @@ function anyUrl(entry: Entry): string {
           <button class="poe-btn poe-btn-dim" (click)="addLink()">Add a link</button>
         }
 
+        @if (takesPicture()) {
+          <div class="poe-field">
+            <label class="poe-field-label">Picture</label>
+            <div
+              class="codex-drop"
+              [class.over]="over()"
+              (paste)="onPaste($event)"
+              (dragover)="onDragOver($event)"
+              (dragleave)="over.set(false)"
+              (drop)="onDrop($event)"
+              tabindex="0"
+            >
+              @if (pictureId()) {
+                <codex-asset-img class="codex-drop-shot" [assetId]="pictureId()" alt="" />
+              }
+              <span>
+                @if (busy()) {
+                  Shrinking it…
+                } @else {
+                  Click here and paste a screenshot, or drop one on this box.
+                }
+              </span>
+              <input type="file" accept="image/*" (change)="onFile($event)" />
+              @if (pictureId()) {
+                <button class="poe-btn poe-btn-dim" (click)="clearPicture()">Remove</button>
+              }
+            </div>
+          </div>
+        }
+
         <div class="poe-field">
           <label class="poe-field-label">Notes</label>
           <textarea rows="4" [value]="d.body" (input)="patch('body', $event)"></textarea>
@@ -219,6 +253,10 @@ export class CodexEntryEditor {
 
   readonly draft = signal<Entry | null>(null);
   readonly tags = signal('');
+  readonly over = signal(false);
+  readonly busy = signal(false);
+
+  private readonly store = inject(CodexStore);
 
   constructor() {
     // Opening a different entry into the same editor replaces the draft rather
@@ -376,6 +414,106 @@ export class CodexEntryEditor {
         return { ...draft, kind, data: { k: 'link' as const, url, host: hostOf(url) } };
       }
       return { ...draft, kind: 'note' as const, data: { k: 'note' as const } };
+    });
+  }
+
+  // --- a picture ---------------------------------------------------------------
+
+  /**
+   * Which entries have somewhere to put one. An atlas keeps a screenshot of a
+   * tree — which is how every atlas in the source documents is stored — a
+   * strategy keeps one of its tree, and an image entry is nothing else.
+   */
+  takesPicture(): boolean {
+    const kind = this.draft()?.data.k;
+    return kind === 'image' || kind === 'atlas' || kind === 'strategy';
+  }
+
+  pictureId(): string {
+    const data = this.draft()?.data;
+    if (!data) return '';
+    if (data.k === 'image') return data.thumbId ?? data.assetId ?? '';
+    if (data.k === 'atlas') return data.src.assetId ?? '';
+    if (data.k === 'strategy') return data.src.atlas?.assetId ?? '';
+    return '';
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.over.set(true);
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.over.set(false);
+    void this.take(imagesIn(event.dataTransfer)[0]);
+  }
+
+  onPaste(event: ClipboardEvent): void {
+    const image = imagesIn(event.clipboardData)[0];
+    if (!image) return;
+    event.preventDefault();
+    void this.take(image);
+  }
+
+  onFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    void this.take(input.files?.[0]);
+    input.value = '';
+  }
+
+  private async take(file: Blob | undefined): Promise<void> {
+    if (!file || this.busy()) return;
+    this.busy.set(true);
+    const kept = await this.store.addImage(file);
+    this.busy.set(false);
+    if (!kept) return;
+    this.draft.update((draft) => {
+      if (!draft) return draft;
+      const data = draft.data;
+      if (data.k === 'image') {
+        return {
+          ...draft,
+          data: { ...data, assetId: kept.assetId, thumbId: kept.thumbId, w: kept.w, h: kept.h },
+        };
+      }
+      if (data.k === 'atlas') {
+        return { ...draft, data: { ...data, src: { ...data.src, assetId: kept.assetId } } };
+      }
+      if (data.k === 'strategy') {
+        const atlas = { ...(data.src.atlas ?? {}), assetId: kept.assetId };
+        return { ...draft, data: { ...data, src: { ...data.src, atlas } } };
+      }
+      return draft;
+    });
+  }
+
+  /**
+   * Takes the picture off the entry. The bytes stay in storage until something
+   * collects them — a delete that runs while you are still deciding is a delete
+   * that cancel cannot undo.
+   */
+  clearPicture(): void {
+    this.draft.update((draft) => {
+      if (!draft) return draft;
+      const data = draft.data;
+      if (data.k === 'image') {
+        const next = { ...data };
+        delete next.assetId;
+        delete next.thumbId;
+        return { ...draft, data: next };
+      }
+      if (data.k === 'atlas') {
+        const src = { ...data.src };
+        delete src.assetId;
+        return { ...draft, data: { ...data, src } };
+      }
+      if (data.k === 'strategy' && data.src.atlas) {
+        const atlas = { ...data.src.atlas };
+        delete atlas.assetId;
+        return { ...draft, data: { ...data, src: { ...data.src, atlas } } };
+      }
+      return draft;
     });
   }
 

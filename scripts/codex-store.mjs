@@ -43,6 +43,7 @@ const capture = await load('codex-capture');
 const metrics = await load('codex-metrics');
 const blocks = await load('codex-blocks');
 const format = await load('codex-format');
+const image = await load('codex-image');
 const {
   SCHEMA,
   BUNDLE_VERSION,
@@ -665,7 +666,36 @@ check(
   'pob',
 );
 
+// --- screenshots ---------------------------------------------------------------
+// One of the three source documents is nothing but screenshots of a loot
+// tracker, at 160-200 KB each, because a spreadsheet has nowhere to put the
+// numbers in them. Keeping them as they arrive is what fills a browser's
+// storage in one evening.
+
+const { fitWithin, imageTitle, FULL_MAX, THUMB_MAX } = image;
+
+check('image: a big screenshot comes down to the long side', fitWithin(2560, 1440, FULL_MAX), {
+  w: 1600,
+  h: 900,
+});
+check('image: a tall one is measured the same way', fitWithin(1440, 2560, FULL_MAX), {
+  w: 900,
+  h: 1600,
+});
+check('image: a small one is left alone rather than blown up', fitWithin(200, 120, FULL_MAX), {
+  w: 200,
+  h: 120,
+});
+check('image: thumbnails are cut to 320', fitWithin(1600, 900, THUMB_MAX), { w: 320, h: 180 });
+check('image: nothing rounds to zero', fitWithin(2000, 3, THUMB_MAX), { w: 320, h: 1 });
+check(
+  'image: the file name is the title, without the extension',
+  imageTitle('Screenshot_2026-08-11_233015.png'),
+  'Screenshot 2026 08 11 233015',
+);
+check('image: something with no name still gets one', imageTitle('.png'), 'Screenshot');
+
 console.log(
-  failures ? `\n${failures} failed` : 'codex schema, capture, query, measurements, blocks and cards: all checks passed',
+  failures ? `\n${failures} failed` : 'codex schema, capture, query, measurements, blocks, cards and images: all checks passed',
 );
 process.exit(failures ? 1 : 0);

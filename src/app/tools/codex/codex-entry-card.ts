@@ -10,9 +10,10 @@
  * that comes off the snapshot taken when it was saved, so a list of forty cards
  * costs no fetches — see codex-snapshot.ts.
  */
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CodexAssetImg } from './codex-asset-img';
+import { CodexStore } from './codex-store';
 import type { Entry } from './codex-types';
 import { completeness, excerptOf, subtitleOf, urlOf, when, type Mark } from './codex-format';
 
@@ -21,10 +22,19 @@ import { completeness, excerptOf, subtitleOf, urlOf, when, type Mark } from './c
   imports: [CodexAssetImg, RouterLink],
   template: `
     <div class="codex-entry-row">
-      @if (thumbId()) {
-        <codex-asset-img class="codex-thumb" [assetId]="thumbId()" alt="" />
-      } @else if (thumbUrl()) {
-        <img class="codex-asset codex-thumb" [src]="thumbUrl()" alt="" loading="lazy" />
+      @if (thumbId() || thumbUrl()) {
+        <button
+          type="button"
+          class="codex-thumb"
+          title="See it full size"
+          (click)="zoom()"
+        >
+          @if (thumbId()) {
+            <codex-asset-img [assetId]="thumbId()" alt="" />
+          } @else {
+            <img class="codex-asset" [src]="thumbUrl()" alt="" loading="lazy" />
+          }
+        </button>
       }
 
       <button type="button" class="codex-entry-main" (click)="opened.emit()">
@@ -106,6 +116,8 @@ import { completeness, excerptOf, subtitleOf, urlOf, when, type Mark } from './c
   `,
 })
 export class CodexEntryCard {
+  private readonly store = inject(CodexStore);
+
   readonly entry = input.required<Entry>();
   /** cards mode, and pages, show the note and the mechanics; a dense list does not */
   readonly full = input(false);
@@ -120,7 +132,7 @@ export class CodexEntryCard {
     if (data.k === 'strategy') {
       return data.src.snapshot?.atlasThumbId ?? data.src.atlas?.assetId ?? '';
     }
-    if (data.k === 'image') return data.assetId ?? '';
+    if (data.k === 'image') return data.thumbId ?? data.assetId ?? '';
     return '';
   });
 
@@ -177,6 +189,27 @@ export class CodexEntryCard {
     }
     return null;
   });
+
+  /**
+   * The card shows a 46 pixel square; the numbers on a loot tracker are not
+   * readable at 46 pixels, and reading them is the only reason the screenshot
+   * was kept. So the thumbnail is a button and the full one is behind it.
+   */
+  zoom(): void {
+    const data = this.entry().data;
+    const title = this.entry().title;
+    if (data.k === 'image' && data.assetId) {
+      this.store.lightbox.set({ assetId: data.assetId, title });
+      return;
+    }
+    const url = this.thumbUrl();
+    if (url) {
+      this.store.lightbox.set({ url, title });
+      return;
+    }
+    const id = this.thumbId();
+    if (id) this.store.lightbox.set({ assetId: id, title });
+  }
 
   marksTitle(): string {
     const marks = this.marks();

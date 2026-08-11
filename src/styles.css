@@ -3472,3 +3472,113 @@ a.strat-link-btn { text-decoration: none; }
   cursor: pointer;
 }
 .codex-convert button:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+/* Screenshots. The capture box takes them the way they arrive — Print Screen,
+   alt-tab, paste — and the card shows a small copy, because forty cards should
+   not decode forty full screenshots to draw forty 46 pixel squares. */
+.codex-capture.over {
+  border-color: rgba(var(--accent-rgb),0.7);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb),0.14);
+}
+.codex-capture-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.codex-capture-row .poe-btn { flex: 1; justify-content: center; }
+.codex-file {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(var(--fg-rgb),0.04);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.codex-file:hover { background: rgba(var(--fg-rgb),0.08); color: var(--text); }
+.codex-file.busy { opacity: 0.6; cursor: progress; }
+.codex-file input { display: none; }
+
+button.codex-thumb {
+  padding: 0;
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+}
+button.codex-thumb:hover { border-color: var(--accent-dim); }
+
+.codex-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--inner-radius);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: text;
+}
+.codex-drop.over { border-color: var(--accent); color: var(--text); }
+.codex-drop span { flex: 1; }
+.codex-drop input[type="file"] { width: auto; font-size: 11px; padding: 2px; }
+.codex-drop .poe-btn { padding: 4px 10px; }
+.codex-drop-shot {
+  flex: 0 0 auto;
+  display: block;
+  width: 64px;
+  height: 48px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.codex-drop-shot img { width: 100%; height: 100%; object-fit: cover; }
+
+/* The full picture, over everything. Clicking anywhere closes it: this is a
+   thing you glance at, not a dialog you dismiss. */
+/* Under the top bar rather than over it. The bar sits outside this component's
+   stacking context, so a z-index high enough to beat it does not exist from in
+   here — and a caption drawn behind the navigation is worse than a picture that
+   politely starts below it. */
+.codex-lightbox {
+  position: fixed;
+  inset: var(--bar-h) 0 0 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  background: rgba(var(--shadow-rgb),0.88);
+  backdrop-filter: blur(3px);
+  cursor: zoom-out;
+}
+.codex-lightbox img {
+  max-width: 100%;
+  max-height: calc(100vh - var(--bar-h) - 90px);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  object-fit: contain;
+}
+.codex-lightbox-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.codex-lightbox-head button {
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.codex-lightbox-head button:hover { color: var(--red); }

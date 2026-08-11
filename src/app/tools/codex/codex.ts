@@ -20,7 +20,9 @@ import { CodexStore } from './codex-store';
 import { CodexPage } from './codex-page';
 import { CodexEntryCard } from './codex-entry-card';
 import { CodexEntryEditor } from './codex-entry-editor';
+import { CodexAssetImg } from './codex-asset-img';
 import { capture, noteBody } from './codex-capture';
+import { imageTitle, imagesIn } from './codex-image';
 import { parseQuery, runQuery, toggleTerm } from './codex-query';
 import { count, mb, typeOf, when } from './codex-format';
 import type { Doc, Entry, Page, PageLayout } from './codex-types';
@@ -45,7 +47,7 @@ const QUICK: { label: string; query: string; title: string }[] = [
 
 @Component({
   selector: 'app-codex',
-  imports: [PoeCard, ToolPage, CodexPage, CodexEntryCard, CodexEntryEditor],
+  imports: [PoeCard, ToolPage, CodexPage, CodexEntryCard, CodexEntryEditor, CodexAssetImg],
   templateUrl: './codex.html',
 })
 export class Codex {
@@ -66,6 +68,7 @@ export class Codex {
   // --- capture -----------------------------------------------------------------
   readonly captureText = signal('');
   readonly captureMessage = signal('');
+  readonly over = signal(false);
 
   // --- the library -------------------------------------------------------------
   readonly query = signal('');
@@ -214,6 +217,67 @@ export class Codex {
     // thirty is not, and opening the last of them would hide the other
     // twenty-nine.
     if (written.length === 1) this.open(written[0], '');
+  }
+
+  /**
+   * A screenshot on the clipboard.
+   *
+   * This is how the evidence actually arrives: Print Screen, alt-tab, paste.
+   * One of the three source documents is nothing but screenshots of a loot
+   * tracker, pasted into a spreadsheet that had nowhere to put the numbers in
+   * them — so the box that takes links takes pictures too, and each one becomes
+   * an entry that can be tagged, found and put on a page.
+   */
+  onPaste(event: ClipboardEvent): void {
+    const images = imagesIn(event.clipboardData);
+    if (!images.length) return;
+    event.preventDefault();
+    void this.keepImages(images);
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.over.set(true);
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.over.set(false);
+    void this.keepImages(imagesIn(event.dataTransfer));
+  }
+
+  onFiles(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    void this.keepImages([...(input.files ?? [])]);
+    input.value = '';
+  }
+
+  private async keepImages(files: File[]): Promise<void> {
+    if (!files.length || this.busy()) return;
+    this.busy.set(true);
+    let kept = 0;
+    for (const file of files) {
+      const image = await this.store.addImage(file);
+      if (!image) break;
+      const entry = await this.store.addEntries([
+        {
+          kind: 'image',
+          title: imageTitle(file.name),
+          data: {
+            k: 'image',
+            assetId: image.assetId,
+            thumbId: image.thumbId,
+            w: image.w,
+            h: image.h,
+          },
+        },
+      ]);
+      if (!entry.length) break;
+      kept++;
+      if (files.length === 1) this.open(entry[0], '');
+    }
+    this.busy.set(false);
+    if (kept) this.captureMessage.set(kept === 1 ? 'Kept the picture.' : `Kept ${kept} pictures.`);
   }
 
   // --- the query ---------------------------------------------------------------

@@ -278,6 +278,7 @@ function readData(kind: EntryKind, raw: unknown): EntryData | null {
       return {
         k: 'image',
         ...(assetId ? { assetId } : {}),
+        ...(str(rec['thumbId']) ? { thumbId: str(rec['thumbId']) } : {}),
         ...(imageUrl ? { imageUrl } : {}),
         ...(num(rec['w']) ? { w: num(rec['w']) } : {}),
         ...(num(rec['h']) ? { h: num(rec['h']) } : {}),

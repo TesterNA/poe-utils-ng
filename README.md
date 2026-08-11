@@ -455,6 +455,20 @@ sentence about scarabs does not. It is an invitation, never a gate: a three seco
 complete record nobody writes. When the guess is wrong — and it is wrong for every imgur atlas —
 *It is really…* changes what an entry is and keeps what it pointed at.
 
+### Screenshots
+
+The third source document is *nothing but* screenshots of a loot tracker — a spreadsheet has
+nowhere to put the numbers in them, so they exist as pixels. Here they are pasted or dropped
+straight onto the capture box, or attached to an atlas or a strategy from its editor, and each one
+becomes an entry that can be tagged, found and put on a page.
+
+Nothing is stored as it arrived. Every picture is re-encoded to webp at quality 0.82 and cut to
+1600 pixels on the long side, with a 320 pixel copy beside it: measured on one of those very
+screenshots, 162 KB of PNG becomes 75 KB, and its thumbnail 7 KB. The card draws the small one —
+forty cards should not decode forty full screenshots to fill forty 46 pixel squares — and clicking
+it opens the full one, because the numbers on a loot tracker are the entire reason it was kept and
+they are not readable at 46 pixels.
+
 ### Pages
 
 A page arranges entries; it does not own them. Putting one on two pages is putting *the same entry*

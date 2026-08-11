@@ -18,6 +18,7 @@ import type { CodexDriver, NewAsset, StorageUse, StoreName } from './codex-drive
 import { LocalDriver } from './codex-db';
 import { newDoc, newEntry, newPage, newView, normaliseTags } from './codex-schema';
 import { placedIds, tagCounts } from './codex-query';
+import { fitWithin, prepareImage, THUMB_MAX } from './codex-image';
 
 @Injectable({ providedIn: 'root' })
 export class CodexStore {
@@ -210,6 +211,40 @@ export class CodexStore {
     void this.refreshUsage();
     return true;
   }
+
+  /**
+   * A pasted or dropped picture: shrunk, converted, and stored twice — the
+   * full one for the lightbox and a small one for the cards. See
+   * codex-image.ts for why nothing is kept as it arrived.
+   */
+  async addImage(source: Blob): Promise<{ assetId: string; thumbId: string; w: number; h: number } | null> {
+    const prepared = await prepareImage(source);
+    if (!prepared) {
+      this.error.set('That file could not be read as an image.');
+      return null;
+    }
+    const assetId = await this.addAsset(prepared.full, {
+      type: 'image/webp',
+      w: prepared.w,
+      h: prepared.h,
+    });
+    if (!assetId) return null;
+    const thumbSize = fitWithin(prepared.w, prepared.h, THUMB_MAX);
+    const thumbId = await this.addAsset(prepared.thumb, {
+      type: 'image/webp',
+      w: thumbSize.w,
+      h: thumbSize.h,
+    });
+    if (!thumbId) return null;
+    return { assetId, thumbId, w: prepared.w, h: prepared.h };
+  }
+
+  /**
+   * What the lightbox is showing, if anything. It lives here because the card
+   * that opens one and the overlay that draws it are in different components,
+   * and the alternative is threading an event through every list on the page.
+   */
+  readonly lightbox = signal<{ assetId?: string; url?: string; title: string } | null>(null);
 
   /** Stores an image and hands back its id, or null when the write failed. */
   async addAsset(blob: Blob, meta: NewAsset): Promise<string | null> {
