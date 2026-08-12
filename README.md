@@ -35,6 +35,25 @@ npm run build
   that walks the original page's DOM. The loader hands it a throwaway hidden host with the two ids
   it dereferences, so it finishes silently instead of throwing on every page load.
 
+## Defense Calculator
+
+`(base + flat) × (1 + increased) × (1 + quality)`, with an optional **Tailoring Orb** on top.
+
+The orb enchants a body armour with *x% increased Explicit Defence Modifier magnitudes*. It rolls
+6, 8, 10, 12 or 15 — the higher ones arrive tied to something unpleasant (all sockets one colour,
+-3 to maximum sockets, 200% increased attribute requirements, halved resistance magnitudes), and
+none of that other half touches a defence number, so the selector offers the percentage alone.
+
+*Magnitude* is not another multiplier on the result. It scales the **roll of each explicit defence
+modifier** before the item's own maths runs, and only those: the base defence of the item type is
+not an explicit modifier, and neither is quality. So an 8% orb turns a `+97 to Armour` roll into
+`+104` and a `138% increased Armour` roll into `149%`, and those are what the formula then uses.
+The product is truncated towards zero, not rounded — 97 × 1.08 = 104.76 shows in game as +104.
+
+The scaling is per modifier, and the truncation with it. Two `+25` rolls typed into Flat Addition
+as a single `50` scale at 6% to `53`, while the item scales each roll on its own — `26` and `26` —
+and shows `52`. Enter one modifier at a time when the last point matters.
+
 ## Kingsmarch Shipment Planner
 
 You enter what is in the warehouse and the shipment value you are aiming for; the tool works out

@@ -11,6 +11,31 @@ function num(value: number | null): number {
   return value ?? 0;
 }
 
+/**
+ * The defence-only magnitudes a Tailoring Orb can enchant onto a body armour.
+ * The orb rolls each of these inside a larger enchant — 6% comes paired with
+ * resistance or attribute magnitudes, 10-15% with socket colours, lost sockets
+ * or heavier attribute requirements — but none of that other half moves a
+ * defence number, so only the percentage is worth picking here.
+ */
+const TAILORING_MAGNITUDES = [6, 8, 10, 12, 15] as const;
+
+/**
+ * A magnitude modifier scales the roll of an explicit modifier, and the game
+ * truncates the product towards zero rather than rounding it: 8% on a +97
+ * roll is 104.76, shown as +104.
+ *
+ * The multiply is written as `x * (100 + m) / 100` on purpose. `x * 1.06` on a
+ * roll of 50 lands on 53.000000000000007, which truncates fine, but the same
+ * shape elsewhere lands a hair *under* the whole number and would truncate a
+ * clean 28 down to 27. Scaling by the integer first keeps whole rolls whole.
+ */
+function applyMagnitude(value: number, magnitude: number): number {
+  if (!magnitude) return value;
+  const scaled = (value * (100 + magnitude)) / 100;
+  return scaled < 0 ? Math.ceil(scaled) : Math.floor(scaled);
+}
+
 @Component({
   selector: 'poe-defense',
   imports: [ToolPage, PoeCard, FormsModule],
@@ -28,6 +53,18 @@ export class Defense {
   readonly inc = signal<number | null>(138);
   readonly quality = signal<number | null>(20);
 
+  readonly tailoringMagnitudes = TAILORING_MAGNITUDES;
+  /** 0 = no orb. Optional: the calculator behaves exactly as before while it is 0. */
+  readonly tailoring = signal<number>(0);
+
+  /**
+   * The orb reaches the explicit modifiers and nothing else — not the base
+   * defence the item type comes with, and not quality, neither of which is an
+   * explicit modifier.
+   */
+  readonly scaledFlat = computed<number>(() => applyMagnitude(num(this.flat()), this.tailoring()));
+  readonly scaledInc = computed<number>(() => applyMagnitude(num(this.inc()), this.tailoring()));
+
   /** Either the value typed directly, or the roll interpolated inside the range. */
   private readonly baseValue = computed<number>(() => {
     if (this.mode() === 'base') return num(this.base());
@@ -39,8 +76,8 @@ export class Defense {
 
   readonly result = computed<number>(() =>
     Math.round(
-      (this.baseValue() + num(this.flat())) *
-        (1 + num(this.inc()) / 100) *
+      (this.baseValue() + this.scaledFlat()) *
+        (1 + this.scaledInc() / 100) *
         (1 + num(this.quality()) / 100),
     ),
   );
@@ -64,6 +101,11 @@ export class Defense {
       void el.offsetWidth;
       el.style.animation = 'countPop 0.15s ease';
     });
+  }
+
+  /** The select carries numbers, which arrive off the DOM as strings. */
+  onTailoring(event: Event): void {
+    this.tailoring.set(Number((event.target as HTMLSelectElement).value));
   }
 
   /** Dragging the slider writes back into the percent field. */
