@@ -22,6 +22,10 @@ export interface RunTotals {
   netDiv: number;
   /** divines an hour, net of what it cost to set up; 0 when nothing was timed */
   perHour: number;
+  /** what one map cost to set up — the ".29 div per map investment" caption */
+  investPerMap: number;
+  /** and what one map paid, net */
+  netPerMap: number;
 }
 
 export function runTotals(runs: readonly Run[] | undefined): RunTotals {
@@ -33,6 +37,8 @@ export function runTotals(runs: readonly Run[] | undefined): RunTotals {
     revenueDiv: 0,
     netDiv: 0,
     perHour: 0,
+    investPerMap: 0,
+    netPerMap: 0,
   };
   for (const run of runs ?? []) {
     totals.runs++;
@@ -46,6 +52,11 @@ export function runTotals(runs: readonly Run[] | undefined): RunTotals {
   // which is what "this strategy makes X an hour" means. Averaging each run's
   // own rate would let a lucky ten minutes outvote a measured two hours.
   totals.perHour = totals.minutes > 0 ? (totals.netDiv * 60) / totals.minutes : 0;
+  // Per map, because that is the unit the source documents actually compare in
+  // — "3.17 div investment" against ".29 div per map investment" is the same
+  // sentence twice, and only one of them can be put next to another strategy.
+  totals.investPerMap = totals.maps > 0 ? totals.investDiv / totals.maps : 0;
+  totals.netPerMap = totals.maps > 0 ? totals.netDiv / totals.maps : 0;
   return totals;
 }
 
@@ -55,4 +66,31 @@ export function perHourLabel(totals: RunTotals): string {
   const value = totals.perHour;
   const rounded = Math.abs(value) >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
   return `${rounded} div/h`;
+}
+
+/** "2.4 div", "0.29 div" — divines, at the precision they are argued about in. */
+export function div(value: number): string {
+  const rounded = Math.abs(value) >= 10 ? Math.round(value) : Math.round(value * 100) / 100;
+  return `${rounded} div`;
+}
+
+/** "4h 10m", or "35m" when it never reached an hour. */
+export function duration(minutes: number): string {
+  if (minutes <= 0) return '';
+  const hours = Math.floor(minutes / 60);
+  const rest = Math.round(minutes % 60);
+  if (!hours) return `${rest}m`;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+}
+
+/** The one line a card carries: how much was measured, and what it came to. */
+export function runsLabel(totals: RunTotals): string {
+  if (!totals.runs) return '';
+  const bits = [`${totals.runs} run${totals.runs === 1 ? '' : 's'}`];
+  if (totals.minutes) bits.push(duration(totals.minutes));
+  if (totals.maps) bits.push(`${totals.maps} maps`);
+  bits.push(`${totals.netDiv >= 0 ? '+' : ''}${div(totals.netDiv)} net`);
+  const rate = perHourLabel(totals);
+  if (rate) bits.push(rate);
+  return bits.join(' · ');
 }

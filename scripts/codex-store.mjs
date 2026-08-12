@@ -347,7 +347,7 @@ check(
 );
 check(
   'capture: a paragraph with no links is one note, not four',
-  grab('день4\nЛегион висп немезис\nскарабы: 2 легион\nпрофит 14 в час').length,
+  grab('день4\nбегал легион\nпрофит 14 в час').length,
   1,
 );
 check(
@@ -492,7 +492,7 @@ check('toggle: and takes the same one away', toggleTerm('kind:strategy tag:legio
 // The whole reason one of the source documents is a separate spreadsheet of
 // screenshots: numbers in a cell cannot be divided by an hour.
 
-const { runTotals, perHourLabel } = metrics;
+const { runTotals, perHourLabel, div, duration, runsLabel } = metrics;
 check('runs: nothing measured is not zero divines an hour, it is nothing', perHourLabel(runTotals([])), '');
 check(
   'runs: net over hours',
@@ -592,6 +592,20 @@ check(
     data: { k: 'atlas', src: { url: 'https://poeplanner.com/a/669h' } },
   },
 );
+// A bare code holds no URL, and "does this paste contain a link" is not the
+// same question as "was anything recognised" — the first one turned pasted
+// share codes into notes.
+check(
+  'capture: a pasted code survives the whole paste, not just captureOne',
+  grab('Легіон висп немезис: ST1:AQACKgEsAQA').map((item) => item.kind + ':' + item.title),
+  ['strategy:Легіон висп немезис'],
+);
+check(
+  'capture: a paste with nothing in it is still one note',
+  grab('день4\nбегал легион\nпрофит 14 в час').length,
+  1,
+);
+
 check(
   'capture: a short link is left alone, because the slug means nothing here',
   captureOne('https://poe-utils.example/s/k7mfrp2q').kind,
@@ -694,6 +708,44 @@ check(
   'Screenshot 2026 08 11 233015',
 );
 check('image: something with no name still gets one', imageTitle('.png'), 'Screenshot');
+
+// --- per map, and what a run reads as -------------------------------------------
+// The captions in the screenshot document compare in two different units —
+// "3.17 div investment" and ".29 div per map investment" — and only one of them
+// can be set beside another strategy.
+
+check(
+  'runs: per map, when the maps were counted',
+  (() => {
+    const t = runTotals([{ id: 'a', at: 0, minutes: 55, maps: 10, investDiv: 3, revenueDiv: 16 }]);
+    return [t.investPerMap.toFixed(2), t.netPerMap.toFixed(2)];
+  })(),
+  ['0.30', '1.30'],
+);
+check(
+  'runs: and not at all when they were not',
+  runTotals([{ id: 'a', at: 0, minutes: 55, investDiv: 3, revenueDiv: 16 }]).netPerMap,
+  0,
+);
+check('runs: a duration reads in hours once it has one', duration(250), '4h 10m');
+check('runs: and in minutes before that', duration(35), '35m');
+check('runs: nothing measured has no duration', duration(0), '');
+check('runs: divines keep their pennies while they matter', [div(0.29), div(2.4), div(16.4)], [
+  '0.29 div',
+  '2.4 div',
+  '16 div',
+]);
+check(
+  'runs: the line a card carries',
+  runsLabel(
+    runTotals([
+      { id: 'a', at: 0, minutes: 55, maps: 10, investDiv: 3, revenueDiv: 16 },
+      { id: 'b', at: 0, minutes: 60, maps: 11, investDiv: 2, revenueDiv: 14 },
+    ]),
+  ),
+  '2 runs · 1h 55m · 21 maps · +25 div net · 13 div/h',
+);
+check('runs: nothing measured says nothing', runsLabel(runTotals([])), '');
 
 console.log(
   failures ? `\n${failures} failed` : 'codex schema, capture, query, measurements, blocks, cards and images: all checks passed',

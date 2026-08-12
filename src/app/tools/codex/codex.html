@@ -219,6 +219,19 @@
                 </button>
               }
             </div>
+            <button
+              type="button"
+              class="codex-chip"
+              [class.on]="comparing()"
+              title="Tick a few and set them side by side"
+              (click)="toggleComparing()"
+            >
+              compare
+            </button>
+            @if (comparing()) {
+              <button type="button" class="codex-chip" (click)="pickAll()">all of these</button>
+              <span class="codex-count">{{ count(picked().size, 'picked') }}</span>
+            }
             @if (query().trim()) {
               <div class="codex-save-view">
                 <input
@@ -240,6 +253,13 @@
             }
           </div>
         </poe-card>
+
+          @if (comparing() && pickedEntries().length > 1) {
+          <poe-card [divider]="false">
+            <div class="section-label">Side by side</div>
+            <codex-compare [entries]="pickedEntries()" />
+          </poe-card>
+        }
 
         <poe-card [divider]="false">
           @if (!store.ready()) {
@@ -273,11 +293,21 @@
                     class="codex-entry"
                     [class.open]="openEntry() === entry.id && openIn() === section.label"
                   >
-                    <codex-entry-card
-                      [entry]="entry"
-                      [full]="layout() === 'cards'"
-                      (opened)="open(entry, section.label)"
-                    />
+                    <div class="codex-pickable">
+                      @if (comparing()) {
+                        <input
+                          class="codex-pick-box"
+                          type="checkbox"
+                          [checked]="isPicked(entry)"
+                          (change)="togglePicked(entry)"
+                        />
+                      }
+                      <codex-entry-card
+                        [entry]="entry"
+                        [full]="layout() === 'cards'"
+                        (opened)="open(entry, section.label)"
+                      />
+                    </div>
                     @if (openEntry() === entry.id && openIn() === section.label) {
                       <codex-entry-editor
                         [entry]="entry"

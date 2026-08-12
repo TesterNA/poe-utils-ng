@@ -251,12 +251,15 @@ export function captureOne(line: string): Captured | null {
 export function capture(text: string): Captured[] {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (!lines.length) return [];
-  // The first line names it and the rest is the body — see `noteBody`, which
-  // the caller applies because the body belongs to the Entry, not to this.
-  if (!lines.some((line) => URL_PATTERN.test(line))) {
+  const items = lines.map(captureOne).filter((item): item is Captured => item !== null);
+  // A paste in which nothing at all was recognised is one thought rather than a
+  // list of orphan lines: the first line names it and `noteBody` keeps the
+  // rest. Asking whether the text holds a URL is not the same question — a
+  // bare share code holds none and is still very much something.
+  if (items.every((item) => item.kind === 'note')) {
     return [{ kind: 'note', title: lines[0].slice(0, 120), data: { k: 'note' } }];
   }
-  return lines.map(captureOne).filter((item): item is Captured => item !== null);
+  return items;
 }
 
 /** What a multi-line note keeps beyond its first line. */

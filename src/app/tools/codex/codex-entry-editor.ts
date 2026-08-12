@@ -9,9 +9,10 @@
  */
 import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { CodexAssetImg } from './codex-asset-img';
+import { CodexRuns } from './codex-runs';
 import { CodexStore } from './codex-store';
 import { imagesIn } from './codex-image';
-import type { AtlasSource, Entry, EntryKind } from './codex-types';
+import type { AtlasSource, Entry, EntryKind, Run } from './codex-types';
 import { hostOf, parseTagInput } from './codex-schema';
 
 /** An image host means a picture; anything else is a link to somebody's tool. */
@@ -34,7 +35,7 @@ function anyUrl(entry: Entry): string {
 
 @Component({
   selector: 'codex-entry-editor',
-  imports: [CodexAssetImg],
+  imports: [CodexAssetImg, CodexRuns],
   template: `
     @if (draft(); as d) {
       <div class="codex-editor">
@@ -182,6 +183,13 @@ function anyUrl(entry: Entry): string {
                 <button class="poe-btn poe-btn-dim" (click)="clearPicture()">Remove</button>
               }
             </div>
+          </div>
+        }
+
+        @if (takesRuns()) {
+          <div class="poe-field">
+            <label class="poe-field-label">What it paid</label>
+            <codex-runs [runs]="d.runs ?? []" (changed)="setRuns($event)" />
           </div>
         }
 
@@ -415,6 +423,22 @@ export class CodexEntryEditor {
       }
       return { ...draft, kind: 'note' as const, data: { k: 'note' as const } };
     });
+  }
+
+  // --- what it paid ------------------------------------------------------------
+
+  /**
+   * Only the things that can be run. A filter link does not make divines an
+   * hour, and a form asking how many it made is a form that teaches the wrong
+   * thing about what this is for.
+   */
+  takesRuns(): boolean {
+    const kind = this.draft()?.kind;
+    return kind === 'strategy' || kind === 'atlas' || kind === 'build';
+  }
+
+  setRuns(runs: Run[]): void {
+    this.draft.update((draft) => (draft ? { ...draft, runs } : draft));
   }
 
   // --- a picture ---------------------------------------------------------------

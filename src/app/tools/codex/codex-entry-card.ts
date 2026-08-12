@@ -16,6 +16,7 @@ import { CodexAssetImg } from './codex-asset-img';
 import { CodexStore } from './codex-store';
 import type { Entry } from './codex-types';
 import { completeness, excerptOf, subtitleOf, urlOf, when, type Mark } from './codex-format';
+import { runsLabel, runTotals } from './codex-metrics';
 
 @Component({
   selector: 'codex-entry-card',
@@ -63,6 +64,9 @@ import { completeness, excerptOf, subtitleOf, urlOf, when, type Mark } from './c
         }
 
         @if (full()) {
+          @if (runsLine()) {
+            <span class="codex-runs-line">{{ runsLine() }}</span>
+          }
           @if (keystones().length) {
             <span class="codex-keystones">{{ keystones().join(' · ') }}</span>
           }
@@ -167,6 +171,9 @@ export class CodexEntryCard {
   });
 
   readonly marks = computed<Mark[]>(() => completeness(this.entry()));
+
+  /** "3 runs · 4h 10m · +52 div net · 12 div/h" — the whole of doc B, in a line. */
+  readonly runsLine = computed(() => runsLabel(runTotals(this.entry().runs)));
 
   /**
    * Our own code opens the tool with the tree in it, which is the thing a

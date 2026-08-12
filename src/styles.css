@@ -3582,3 +3582,151 @@ button.codex-thumb:hover { border-color: var(--accent-dim); }
   cursor: pointer;
 }
 .codex-lightbox-head button:hover { color: var(--red); }
+
+/* What it paid. The numbers a spreadsheet keeps as a sentence, or as pixels in
+   a screenshot: a table instead, so they can be added up and sorted. */
+.codex-runs-line {
+  color: var(--ok);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.codex-runs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.codex-runs-table th {
+  padding: 2px 6px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.codex-runs-table td {
+  padding: 3px 6px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.codex-runs-table tfoot td {
+  border-top: 1px solid var(--accent-dim);
+  color: var(--text);
+}
+.codex-runs-table td.good { color: var(--ok); }
+.codex-runs-table td.bad { color: var(--bad); }
+.codex-runs-actions { display: flex; align-items: center; gap: 4px; }
+.codex-runs-actions button {
+  padding: 0 3px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.codex-runs-actions button:hover { color: var(--red); }
+.codex-runs-shot {
+  width: 26px;
+  height: 20px;
+  padding: 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.codex-runs-shot img { width: 100%; height: 100%; object-fit: cover; }
+
+.codex-run-form {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--inner-radius);
+}
+.codex-run-form.over { border-color: var(--accent); }
+.codex-run-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 0 0 74px;
+}
+.codex-run-form label.wide { flex: 1 1 140px; }
+.codex-run-form label span {
+  color: var(--text-muted);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.codex-run-form input { padding: 5px 7px !important; font-size: 13px !important; }
+.codex-run-form .poe-btn { flex: 0 0 auto; padding: 6px 12px; }
+.codex-run-shot {
+  display: block;
+  width: 44px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.codex-run-shot img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Side by side: the separate spreadsheet of screenshots, as one table. */
+.codex-compare { overflow-x: auto; }
+.codex-compare table {
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 100%;
+}
+.codex-compare th {
+  padding: 5px 8px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.codex-compare thead th {
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  border-bottom: 1px solid var(--border);
+}
+.codex-compare td {
+  min-width: 150px;
+  max-width: 260px;
+  padding: 5px 8px;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+}
+.codex-compare td small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.codex-compare td.best {
+  background: rgba(var(--green-rgb),0.10);
+  color: var(--ok);
+}
+.codex-compare-note { white-space: pre-wrap; }
+.codex-compare .codex-thumb { margin: 0 4px 4px 0; display: inline-block; vertical-align: top; }
+
+.codex-pickable { display: flex; align-items: flex-start; gap: 4px; }
+.codex-pickable > codex-entry-card { flex: 1; min-width: 0; }
+.codex-pick-box {
+  flex: 0 0 auto;
+  width: auto !important;
+  margin: 12px 0 0 8px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

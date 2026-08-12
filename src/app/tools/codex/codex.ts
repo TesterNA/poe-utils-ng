@@ -20,6 +20,7 @@ import { CodexStore } from './codex-store';
 import { CodexPage } from './codex-page';
 import { CodexEntryCard } from './codex-entry-card';
 import { CodexEntryEditor } from './codex-entry-editor';
+import { CodexCompare } from './codex-compare';
 import { CodexAssetImg } from './codex-asset-img';
 import { capture, noteBody } from './codex-capture';
 import { imageTitle, imagesIn } from './codex-image';
@@ -47,7 +48,15 @@ const QUICK: { label: string; query: string; title: string }[] = [
 
 @Component({
   selector: 'app-codex',
-  imports: [PoeCard, ToolPage, CodexPage, CodexEntryCard, CodexEntryEditor, CodexAssetImg],
+  imports: [
+    PoeCard,
+    ToolPage,
+    CodexPage,
+    CodexEntryCard,
+    CodexEntryEditor,
+    CodexAssetImg,
+    CodexCompare,
+  ],
   templateUrl: './codex.html',
 })
 export class Codex {
@@ -121,6 +130,21 @@ export class Codex {
       for (const tag of entry.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
     return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 30);
+  });
+
+  /**
+   * Picking things to set side by side.
+   *
+   * The document this answers is four scarab setups and eight screenshots,
+   * kept apart in a spreadsheet of its own because there was nowhere to put
+   * the numbers. Two ticks and they are columns of one table.
+   */
+  readonly comparing = signal(false);
+  readonly picked = signal<ReadonlySet<string>>(new Set());
+
+  readonly pickedEntries = computed(() => {
+    const ids = this.picked();
+    return this.store.entries().filter((entry) => ids.has(entry.id));
   });
 
   /** The open editor, and which section it was opened from — see `open`. */
@@ -325,6 +349,28 @@ export class Codex {
   async saveView(): Promise<void> {
     const view = await this.store.addView(this.viewName(), this.query(), this.layout());
     if (view) this.viewName.set('');
+  }
+
+  toggleComparing(): void {
+    this.comparing.update((on) => !on);
+    if (!this.comparing()) this.picked.set(new Set());
+  }
+
+  togglePicked(entry: Entry): void {
+    this.picked.update((ids) => {
+      const next = new Set(ids);
+      if (!next.delete(entry.id)) next.add(entry.id);
+      return next;
+    });
+  }
+
+  isPicked(entry: Entry): boolean {
+    return this.picked().has(entry.id);
+  }
+
+  /** Everything on screen at once — the usual way a comparison starts. */
+  pickAll(): void {
+    this.picked.set(new Set(this.results().map((entry) => entry.id)));
   }
 
   // --- editing -----------------------------------------------------------------

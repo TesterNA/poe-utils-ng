@@ -455,6 +455,23 @@ sentence about scarabs does not. It is an invitation, never a gate: a three seco
 complete record nobody writes. When the guess is wrong — and it is wrong for every imgur atlas —
 *It is really…* changes what an entry is and keeps what it pointed at.
 
+### What it paid
+
+A strategy carries **runs**: how long, how many maps, what it cost to set up, what came out. Net,
+divines an hour and per-map are worked out and never typed, because a stored total is a total that
+can disagree with its own parts. The loot tracker's screenshot can be pasted onto the run itself, so
+the proof travels with the numbers.
+
+That turns the third source document — four scarab setups, eight screenshots and a caption under
+each — into a **Side by side** view: the setups are columns, every row is one question asked of all
+of them at once, and the best net and the best rate are marked, because "which of these is better"
+is the only reason anybody opens that document. It is also why `sort:perhour` exists: the whole
+library, ordered by what it actually paid.
+
+Per map matters more than it looks. Those captions compare in two different units — "3.17 div
+investment" against ".29 div per map investment" — and only one of them can be set beside another
+strategy.
+
 ### Screenshots
 
 The third source document is *nothing but* screenshots of a loot tracker — a spreadsheet has
