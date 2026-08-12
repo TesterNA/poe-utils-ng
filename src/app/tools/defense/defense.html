@@ -83,6 +83,37 @@
       <input type="number" [ngModel]="quality()" (ngModelChange)="quality.set($event)" />
     </div>
 
+    <div class="poe-divider">
+      <div class="poe-divider-line"></div>
+      <div class="poe-diamond"></div>
+      <div class="poe-divider-line"></div>
+    </div>
+
+    <div class="section-label">Tailoring Orb (optional)</div>
+    <div class="poe-field">
+      <div class="poe-field-label">Body Armour Enchantment</div>
+      <!-- selected per option rather than [value] on the select: the list is
+           rendered by @for, so a value bound to the select alone would land
+           before the options exist. -->
+      <select (change)="onTailoring($event)">
+        <option [value]="0" [selected]="tailoring() === 0">None</option>
+        @for (magnitude of tailoringMagnitudes; track magnitude) {
+          <option [value]="magnitude" [selected]="tailoring() === magnitude">
+            {{ magnitude }}% increased Explicit Defence Modifier magnitudes
+          </option>
+        }
+      </select>
+      @if (tailoring()) {
+        <p class="def-hint">
+          Explicit rolls only — the base value and quality are untouched. Flat
+          <b>{{ flat() ?? 0 }} → {{ scaledFlat() }}</b>, increased
+          <b>{{ inc() ?? 0 }}% → {{ scaledInc() }}%</b>. The game scales and truncates each
+          modifier on its own, so a Flat Addition that adds two rolls together can land a point
+          above what the item shows.
+        </p>
+      }
+    </div>
+
     <div class="result-box">
       <div class="result-label">Final Value</div>
       <div class="result-value" #resultEl>{{ result() }}</div>

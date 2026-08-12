@@ -795,6 +795,17 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ============================================================
+   DEFENSE CALCULATOR
+   ============================================================ */
+.def-hint {
+  margin: 8px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.def-hint b { color: var(--text); font-weight: 600; }
+
+/* ============================================================
    EXCHANGE HELPERS
    ============================================================ */
 .ratio-row {
