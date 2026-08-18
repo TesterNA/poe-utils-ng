@@ -585,15 +585,27 @@ export class Atlas {
   }
 
   /**
-   * Summarises the same set the share code carries: the route while you are
-   * still planning, the allocated tree otherwise. Reading a summary of the tree
-   * you are about to replace would be worse than useless.
+   * The tree that a code, a link, the summary and a saved build all describe:
+   * the route while you are planning in targets mode, the allocated tree
+   * otherwise. Sharing mid-plan then gives the reader the result rather than
+   * your working state, which is the point of preferring the route at all.
+   *
+   * Mode has to be part of it. Reading `route` whenever it was non-empty meant a
+   * route left over from a plan you never applied stayed the source after you
+   * switched to path mode: every edit there changed the tree while the code, the
+   * link and the summary went on describing the abandoned route, and nothing you
+   * could do in path mode got them unstuck. The canvas and the point budget were
+   * already mode-aware, so these were the only readers out of step.
    */
+  private planned(): Set<number> {
+    return this.mode() === 'targets' && this.route.size > 0 ? this.route : this.allocated;
+  }
+
   private refreshSummary(): void {
     const tree = this.tree;
     const stats = this.stats;
     if (!tree || !stats) return;
-    this.summary.set(summarise(tree, stats, this.route.size > 0 ? this.route : this.allocated));
+    this.summary.set(summarise(tree, stats, this.planned()));
   }
 
   private changed(): void {
@@ -615,11 +627,6 @@ export class Atlas {
     }
   }
 
-  /**
-   * A code carries the finished tree only. While you are still planning, the
-   * route on screen is that tree — so sharing mid-plan gives the reader the
-   * result rather than your working state.
-   */
   private refreshShareCode(): void {
     this.shareCode.set(this.buildCode());
   }
@@ -627,7 +634,7 @@ export class Atlas {
   private buildCode(): string {
     const tree = this.tree;
     if (!tree) return '';
-    const shared = this.route.size > 0 ? this.route : this.allocated;
+    const shared = this.planned();
     return encodePlan(tree, {
       treeVersion: this.treeVersion(),
       allocated: [...shared].map((i) => tree.nodes[i].id),
@@ -745,9 +752,9 @@ export class Atlas {
     this.targetSet = toIndices(plan.legacyTargets ?? []);
     this.excludedSet = toIndices(plan.legacyBlocked ?? []);
     for (const idx of this.targetSet) this.excludedSet.delete(idx);
+    this.route.clear();
     this.setMode(this.targetSet.size > 0 ? 'targets' : 'path');
     this.rebuildSearchGraph();
-    this.route.clear();
     this.solve();
     this.changed();
     this.renderer?.fit();
@@ -807,7 +814,7 @@ export class Atlas {
     const name = this.buildName().trim();
     const code = this.shareCode();
     if (!name || !code) return;
-    const points = this.paid(this.route.size > 0 ? this.route : this.allocated);
+    const points = this.paid(this.planned());
     const next = upsertBuild(this.builds(), {
       name,
       code,
@@ -845,7 +852,7 @@ export class Atlas {
       // The library has to be read before it can be written to, or saving over
       // a name that is already there would make a second entry with that name.
       await this.codex.load();
-      const shown = this.route.size > 0 ? this.route : this.allocated;
+      const shown = this.planned();
       const blob = await drawTreeThumb(tree, shown);
       const thumbId = blob
         ? ((await this.codex.addAsset(blob, { type: 'image/webp', w: 420, h: 420 })) ?? undefined)
@@ -927,10 +934,10 @@ export class Atlas {
 
   setMode(mode: Mode): void {
     this.mode.set(mode);
-    this.refreshBudget();
     this.preview.clear();
-    this.dirty = true;
-    this.persist();
+    // The mode decides what the code, the link and the summary are describing,
+    // so the switch itself is a change to them — not just to the canvas.
+    this.changed();
   }
 
   // ----------------------------------------------------------- exclusions ---
@@ -1172,8 +1179,14 @@ export class Atlas {
     // notables" rebuilds an equivalent target list from the tree in one click.
     this.targetSet.clear();
     this.route.clear();
+    this.preview.clear();
+    this.notice.set('');
+    // Cancels anything the solver still has in flight and resets the status line.
     this.solve();
-    this.changed();
+    // Applying is the end of planning, so it hands you back to the mode that
+    // edits a tree. Staying in targets mode left an empty planner sitting over
+    // the tree you had just built, one click away from re-solving it.
+    this.setMode('path');
   }
 
   clearTargets(): void {
