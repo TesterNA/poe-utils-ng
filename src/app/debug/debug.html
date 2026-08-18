@@ -1,0 +1,34 @@
+<poe-tool-page
+  heading="Debug"
+  subtitle="What is running here, and what changed in it"
+  [pips]="[false, true, false]"
+>
+  <poe-card maxWidth="720px">
+    <div class="section-label">Running</div>
+    <div class="debug-now">
+      <span class="debug-version">v{{ version }}</span>
+      <span class="debug-meta">released {{ date }}</span>
+    </div>
+
+    <div class="poe-divider">
+      <div class="poe-divider-line"></div>
+      <div class="poe-diamond"></div>
+      <div class="poe-divider-line"></div>
+    </div>
+
+    <div class="section-label">History</div>
+    @for (release of releases; track release.version) {
+      <div class="debug-release">
+        <div class="debug-release-head">
+          <span class="debug-release-version">v{{ release.version }}</span>
+          <span class="debug-meta">{{ release.date }}</span>
+        </div>
+        <ul class="debug-changes">
+          @for (change of release.changes; track change) {
+            <li>{{ change }}</li>
+          }
+        </ul>
+      </div>
+    }
+  </poe-card>
+</poe-tool-page>

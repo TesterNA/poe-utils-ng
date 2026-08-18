@@ -69,6 +69,12 @@ export const routes: Routes = [
     loadComponent: () => import('./account/account').then((m) => m.Account),
   },
   {
+    // unlinked on purpose: what version is running and what changed in it
+    path: 'debug',
+    title: 'Debug · PoE Tools',
+    loadComponent: () => import('./debug/debug').then((m) => m.Debug),
+  },
+  {
     // the short-link landing: swaps the slug for a code and forwards
     path: 's/:slug',
     title: 'Opening link · PoE Tools',

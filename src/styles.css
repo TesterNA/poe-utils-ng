@@ -3730,3 +3730,51 @@ button.codex-thumb:hover { border-color: var(--accent-dim); }
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+/* ============================================================
+   DEBUG
+   ------------------------------------------------------------
+   The unlinked page at /debug: the version running, then the history.
+   ============================================================ */
+.debug-now {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.debug-version {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+}
+.debug-meta {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.debug-release { margin-bottom: 18px; }
+.debug-release:last-child { margin-bottom: 0; }
+.debug-release-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.debug-release-version {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.debug-changes {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+.debug-changes li::marker { color: var(--accent-dim); }
