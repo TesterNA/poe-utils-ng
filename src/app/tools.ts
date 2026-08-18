@@ -60,9 +60,13 @@ export const TOOLS: ToolDef[] = [
     icon: '<path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z"/><path d="M9 4v14M15 6v14"/>',
   },
   {
+    // still a beta, and not certain to be finished: kept off the sidebar until
+    // it is, though /codex still opens and the two "keep in the Codex" buttons
+    // in Atlas and Strategy still write to it
     id: 'codex',
     label: 'Codex',
     icon: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M8 3v14"/><path d="M11.5 7.5h4M11.5 11h4"/>',
+    hidden: true,
   },
   {
     id: 'minesweeper',

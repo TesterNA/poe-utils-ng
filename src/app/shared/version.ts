@@ -32,12 +32,7 @@ export const RELEASES: Release[] = [
   {
     version: '1.4.0',
     date: '2026-08-12',
-    changes: [
-      'New tool: Codex — a library of entries with tags, search and pages',
-      'Codex compares runs and shows what a strategy actually paid',
-      'Codex cards draw the atlas tree itself instead of a screenshot of one',
-      'Defense: a Tailoring Orb scales the rolls, not the total',
-    ],
+    changes: ['Defense: a Tailoring Orb scales the rolls, not the total'],
   },
   {
     version: '1.3.0',
