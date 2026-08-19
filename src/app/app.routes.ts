@@ -53,6 +53,11 @@ export const routes: Routes = [
     loadComponent: () => import('./tools/strategy/strategy').then((m) => m.Strategy),
   },
   {
+    path: 'voyage',
+    title: 'Voyage Builder · PoE Tools',
+    loadComponent: () => import('./tools/voyage/voyage').then((m) => m.Voyage),
+  },
+  {
     path: 'codex',
     title: 'Codex · PoE Tools',
     loadComponent: () => import('./tools/codex/codex').then((m) => m.Codex),

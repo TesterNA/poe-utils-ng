@@ -1,6 +1,6 @@
 {
   "name": "poe-utils-ng",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -13,6 +13,7 @@
     "test:regex": "node scripts/regex-range.mjs",
     "test:sync": "node scripts/sync-merge.mjs",
     "test:codex": "node scripts/codex-store.mjs",
+    "test:voyage": "node scripts/voyage-plan.mjs",
     "test:api": "node scripts/api-load.mjs",
     "test:version": "node scripts/version-check.mjs",
     "fetch:strategy": "node scripts/fetch-strategy-items.mjs",

@@ -3732,6 +3732,259 @@ button.codex-thumb:hover { border-color: var(--accent-dim); }
 }
 
 /* ============================================================
+   VOYAGE BUILDER
+   ------------------------------------------------------------
+   A stash of Charts on the left of each row and a stepper on the right, then
+   the boards the builder made of them: one SVG per Voyage, cells with the
+   Connections drawn from the middle out. The gap between cells is six units
+   and a Connection reaches three past its cell, so two facing Connections
+   meet exactly in the middle of the seam and a Connection with nothing to
+   meet stops halfway — which is what an invalid board would look like.
+   ============================================================ */
+.vy-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.vy-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.vy-head .poe-btn { margin-bottom: 0; }
+
+.vy-shapes {
+  display: grid;
+  gap: 8px;
+}
+.vy-shape {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-well);
+  border: 1px solid rgba(var(--fg-rgb),0.07);
+  border-radius: var(--inner-radius);
+  transition: border-color 0.2s;
+}
+.vy-shape-on { border-color: rgba(var(--accent-rgb),0.35); }
+
+.vy-glyph {
+  width: 26px;
+  height: 26px;
+}
+.vy-glyph rect {
+  fill: rgba(var(--fg-rgb),0.04);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.vy-glyph line {
+  stroke: var(--accent-dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.vy-shape-on .vy-glyph line { stroke: var(--accent); }
+
+.vy-shape-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.vy-shape-note {
+  display: block;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vy-counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vy-step {
+  width: 30px;
+  padding: 6px 0;
+  justify-content: center;
+  margin-bottom: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+.vy-num {
+  width: 68px;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+/* the two readings of the rule, each with the reason it is there under it */
+.vy-modes .mode-tab {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.vy-modes code {
+  display: block;
+  margin-top: 3px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 10px;
+  line-height: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-muted);
+}
+.vy-modes input:checked + .mode-tab code { color: var(--accent-dim); }
+
+.vy-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0 18px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vy-paste {
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.vy-paste-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.vy-paste-row .poe-btn { margin-bottom: 0; }
+.vy-msg {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.vy-result-note {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+}
+
+.vy-variants {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 18px 0 4px;
+}
+.vy-variants .poe-btn {
+  width: 34px;
+  justify-content: center;
+  margin-bottom: 0;
+}
+.vy-variants-label {
+  margin-right: 4px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vy-boards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.vy-board {
+  padding: 12px;
+  background: var(--bg-well);
+  border: 1px solid rgba(var(--fg-rgb),0.07);
+  border-radius: var(--inner-radius);
+}
+.vy-board-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.vy-board-title {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.vy-board-bad {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.vy-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.vy-cell {
+  fill: rgba(var(--fg-rgb),0.04);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+/* where the Voyage begins, and so the corner the board is read from */
+.vy-cell-start {
+  fill: rgba(var(--green-rgb),0.10);
+  stroke: rgba(var(--green-rgb),0.55);
+}
+.vy-stub {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.vy-board-spend {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.vy-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vy-left-item {
+  padding: 5px 10px;
+  background: rgba(var(--fg-rgb),0.05);
+  border: 1px solid rgba(var(--fg-rgb),0.08);
+  border-radius: var(--inner-radius);
+  font-size: 12px;
+  color: var(--text);
+}
+.vy-left-item em {
+  font-style: normal;
+  color: var(--text-dim);
+}
+.vy-left-none {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.vy-left + .vy-msg { margin-top: 10px; }
+
+@media (max-width: 640px) {
+  .vy-shape { grid-template-columns: 28px minmax(0, 1fr); }
+  .vy-counter { grid-column: 1 / -1; justify-content: flex-end; }
+}
+
+/* ============================================================
    DEBUG
    ------------------------------------------------------------
    The unlinked page at /debug: the version running, then the history.

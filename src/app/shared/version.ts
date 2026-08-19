@@ -22,6 +22,11 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    version: '1.6.0',
+    date: '2026-08-19',
+    changes: ['Voyage Builder: how many whole Voyages your Charts make, and where each one goes'],
+  },
+  {
     version: '1.5.0',
     date: '2026-08-18',
     changes: [

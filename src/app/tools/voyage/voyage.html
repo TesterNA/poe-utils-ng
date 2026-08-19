@@ -1,0 +1,207 @@
+<poe-tool-page heading="Voyage Builder" subtitle="Charts · Connections · Whole Voyages">
+  <div class="tool-intro">
+    <strong>How many Voyages your Charts actually make.</strong> A Voyage is nine Charts on a 3x3
+    board, and the only thing that has to line up is the Connections: each one leads off the board,
+    or into a Connection facing it. Say how many Charts of each shape you have and the builder lays
+    out as many complete boards as they are worth, each Chart spent <em>once</em>. Modifiers are not
+    weighed here — this answers whether it <em>fits</em>.
+  </div>
+
+  <div class="vy-stack">
+    <poe-card [maxWidth]="'980px'">
+      <div class="vy-head">
+        <div class="section-label" style="margin: 0">Charts in the stash</div>
+        <button class="poe-btn poe-btn-red" (click)="clear()">🗑 Clear</button>
+      </div>
+
+      <div class="vy-shapes">
+        @for (row of rows(); track row.shape) {
+          <div class="vy-shape" [class.vy-shape-on]="row.count > 0">
+            <svg class="vy-glyph" viewBox="-4 -4 26 26" aria-hidden="true">
+              <rect x="0" y="0" width="18" height="18" rx="3" />
+              @for (stub of row.glyph; track $index) {
+                <line
+                  [attr.x1]="stub.x1"
+                  [attr.y1]="stub.y1"
+                  [attr.x2]="stub.x2"
+                  [attr.y2]="stub.y2"
+                />
+              }
+            </svg>
+            <div class="vy-shape-name">
+              {{ row.label }}
+              <span class="vy-shape-note">{{ row.note }}</span>
+            </div>
+            <div class="vy-counter">
+              <button class="poe-btn poe-btn-dim vy-step" (click)="add(row.shape, -1)">−</button>
+              <input
+                type="number"
+                class="vy-num"
+                min="0"
+                step="1"
+                [ngModel]="row.count"
+                (ngModelChange)="setCount(row.shape, $event)"
+              />
+              <button class="poe-btn poe-btn-dim vy-step" (click)="add(row.shape, 1)">+</button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="vy-meta">
+        <span>{{ total() }} Charts</span>
+        <span>{{ ceiling() }} full boards' worth</span>
+      </div>
+
+      <div class="section-label">Validity</div>
+      <div class="mode-toggle vy-modes">
+        <label class="mode-label">
+          <input
+            type="radio"
+            name="vy-policy"
+            value="connected"
+            [ngModel]="policy()"
+            (ngModelChange)="setPolicy($event)"
+          />
+          <span class="mode-tab">
+            One route
+            <code>every area reachable from the start</code>
+          </span>
+        </label>
+        <label class="mode-label">
+          <input
+            type="radio"
+            name="vy-policy"
+            value="open"
+            [ngModel]="policy()"
+            (ngModelChange)="setPolicy($event)"
+          />
+          <span class="mode-tab">
+            Connections only
+            <code>as the in-game rule is worded</code>
+          </span>
+        </label>
+      </div>
+
+      <button
+        class="poe-btn poe-btn-primary"
+        [disabled]="total() === 0 || searching()"
+        (click)="calculate()"
+      >
+        @if (searching()) {
+          Searching…
+        } @else {
+          Calculate · {{ attempts }} searches at once
+        }
+      </button>
+
+      <div class="section-label">Paste Charts from the game</div>
+      <textarea
+        class="vy-paste"
+        rows="3"
+        placeholder="Ctrl+C a Chart in game and paste it here — several at once is fine"
+        #pasteBox
+      ></textarea>
+      <div class="vy-paste-row">
+        <button class="poe-btn poe-btn-dim" (click)="paste(pasteBox.value); pasteBox.value = ''">
+          Add to the stash
+        </button>
+        @if (pasteMessage()) {
+          <span class="vy-msg">{{ pasteMessage() }}</span>
+        }
+      </div>
+    </poe-card>
+
+    @if (result(); as plan) {
+      <poe-card [maxWidth]="'980px'">
+        <div class="result-box">
+          <div class="result-label">Voyages</div>
+          <div class="result-value">{{ plan.voyages }}</div>
+          <div class="vy-result-note">
+            @if (plan.voyages === 0) {
+              Not one board can be filled from these Charts
+            } @else if (plan.proven) {
+              every Chart that could be spent is spent · {{ plan.elapsedMs }}ms
+            } @else {
+              best of {{ attempts }} searches · {{ plan.elapsedMs }}ms
+            }
+          </div>
+        </div>
+
+        @if (plan.plans.length > 1) {
+          <div class="vy-variants">
+            <span class="vy-variants-label">Layout</span>
+            @for (option of plan.plans; track $index) {
+              <button
+                class="poe-btn"
+                [class.poe-btn-dim]="planIndex() !== $index"
+                [class.poe-btn-yellow]="planIndex() === $index"
+                (click)="planIndex.set($index)"
+              >
+                {{ $index + 1 }}
+              </button>
+            }
+          </div>
+        }
+
+        <div class="vy-boards">
+          @for (board of boards(); track $index) {
+            <div class="vy-board">
+              <div class="vy-board-head">
+                <span class="vy-board-title">Voyage {{ $index + 1 }}</span>
+                @if (!board.valid) {
+                  <span class="vy-board-bad">invalid</span>
+                }
+              </div>
+              <svg class="vy-svg" [attr.viewBox]="viewBox" role="img">
+                @for (cell of board.cells; track cell.index) {
+                  <rect
+                    class="vy-cell"
+                    [class.vy-cell-start]="cell.start"
+                    [attr.x]="cell.x"
+                    [attr.y]="cell.y"
+                    [attr.width]="cellSize"
+                    [attr.height]="cellSize"
+                    rx="4"
+                  />
+                  @for (stub of cell.stubs; track $index) {
+                    <line
+                      class="vy-stub"
+                      [attr.x1]="stub.x1"
+                      [attr.y1]="stub.y1"
+                      [attr.x2]="stub.x2"
+                      [attr.y2]="stub.y2"
+                    />
+                  }
+                }
+              </svg>
+              <div class="vy-board-spend">{{ board.spend }}</div>
+            </div>
+          }
+        </div>
+
+        <div class="poe-divider">
+          <div class="poe-divider-line"></div>
+          <div class="poe-diamond"></div>
+          <div class="poe-divider-line"></div>
+        </div>
+
+        <div class="section-label">Left in the stash</div>
+        @if (leftover().length === 0) {
+          <div class="vy-left-none">Nothing — every Chart is on a board.</div>
+        } @else {
+          <div class="vy-left">
+            @for (entry of leftover(); track entry.label) {
+              <span class="vy-left-item"
+                >{{ entry.count }} <em>{{ entry.label }}</em></span
+              >
+            }
+          </div>
+          @if (missing()) {
+            <div class="vy-msg">One more Voyage is {{ missing() }} away.</div>
+          }
+        }
+      </poe-card>
+    }
+  </div>
+</poe-tool-page>

@@ -60,6 +60,11 @@ export const TOOLS: ToolDef[] = [
     icon: '<path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z"/><path d="M9 4v14M15 6v14"/>',
   },
   {
+    id: 'voyage',
+    label: 'Voyage Builder',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v7M12 14v7M3 12h7M14 12h7"/><circle cx="12" cy="12" r="2"/>',
+  },
+  {
     // still a beta, and not certain to be finished: kept off the sidebar until
     // it is, though /codex still opens and the two "keep in the Codex" buttons
     // in Atlas and Strategy still write to it
